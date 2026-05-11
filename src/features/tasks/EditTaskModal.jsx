@@ -1,11 +1,98 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
 
 // Bootstrap modal for editing task
+function EditTaskModal({ task, updateTask, modalId }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("Low");
+  const [status, setStatus] = useState("Pending");
 
-export default function EditTaskModal() {
+  useEffect(() => {
+    if (task) {                                                                                            
+      setTitle(task.title || "");
+      setDescription(task.description || "");
+      setPriority(task.priority || "Low");
+      setStatus(task.status || "Pending");
+    }
+  }, [task]); // only run when task changes
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const updatednewTask = {
+      ...task, 
+      title,
+      description,
+      priority,
+      status,
+    };
+
+    updateTask(updatednewTask);
+  };
+
   return (
-    <div>
-      
+    <div className="modal fade" id={modalId} tabIndex={-1} aria-hidden="true">
+      <div className="modal-dialog">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">Edit Task</h5>
+            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div className="modal-body">
+            <form className="row g-3" onSubmit={handleSubmit}>
+              <div className="col-12">
+                <label className="form-label">Title<span className='text-danger'>*</span></label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={title} 
+                  onChange={(e) => setTitle(e.target.value)}
+                  required 
+                />
+              </div>
+              
+              <div className="col-12">
+                <label className="form-label">Description</label>
+                <textarea 
+                  className="form-control" 
+                  value={description} 
+                  onChange={(e) => setDescription(e.target.value)}
+                ></textarea>
+              </div>
+
+              <div className="col-12">
+                <label className="form-label">Priority</label>
+                <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value)}>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+
+              <div className="col-12">
+                <label className="form-label">Status</label>
+                <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)}>
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+
+              <div className="col-12 d-md-flex justify-content-md-end">
+                <button type="button" className="btn btn-secondary btn-sm me-md-2" data-bs-dismiss="modal">
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-sm btn-primary" data-bs-dismiss="modal">
+                  Update Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
+
+export default EditTaskModal

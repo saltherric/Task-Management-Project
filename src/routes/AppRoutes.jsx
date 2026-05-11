@@ -10,7 +10,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/task" element={<TaskPage />} />
+        <Route path="/home" element={<TaskPage />} />
       </Routes>
     </BrowserRouter>
   )
