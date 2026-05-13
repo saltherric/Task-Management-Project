@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Bootstrap modal for editing task
+
 function EditTaskModal({ task, updateTask, modalId }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -26,7 +27,6 @@ function EditTaskModal({ task, updateTask, modalId }) {
       priority,
       status,
     };
-
     updateTask(updatednewTask);
   };
 
@@ -43,22 +43,16 @@ function EditTaskModal({ task, updateTask, modalId }) {
             <form className="row g-3" onSubmit={handleSubmit}>
               <div className="col-12">
                 <label className="form-label">Title<span className='text-danger'>*</span></label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)}
-                  required 
+                <input type="text" className="form-control" value={title} 
+                  onChange={(e) => setTitle(e.target.value)} required 
                 />
               </div>
               
               <div className="col-12">
                 <label className="form-label">Description</label>
-                <textarea 
-                  className="form-control" 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)}
-                ></textarea>
+                <textarea className="form-control" value={description} 
+                  onChange={(e) => setDescription(e.target.value)}>
+                </textarea>
               </div>
 
               <div className="col-12">

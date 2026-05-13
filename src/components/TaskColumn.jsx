@@ -2,7 +2,7 @@ import React from 'react'
 import TaskCard from "./TaskCard";
 import { Droppable } from '@hello-pangea/dnd';
 
-// each task column -> Pending column
+// each task column
 
 function TaskColumn(props) {
   return (
@@ -26,11 +26,12 @@ function TaskColumn(props) {
                     key={task.id}
                     task={task} 
                     updateTask={props.updateTask}
+                    deleteTask={props.deleteTask}
                     index={index}
                   />
                 ))
               }
-              {provided.placeholder}
+              {provided.placeholder}  
             </div>
           )}
 

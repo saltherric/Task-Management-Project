@@ -3,14 +3,20 @@ import {BrowserRouter, Routes, Route} from 'react-router-dom';
 import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
 import TaskPage from '../features/tasks/TaskPage';
+import ProtectedRoute from '../features/auth/protectedRoute';
 
 function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/home" element={<TaskPage />} />
+        <Route path="/home" element={
+          <ProtectedRoute>
+            <TaskPage />
+          </ProtectedRoute>
+        }/>
       </Routes>
     </BrowserRouter>
   )

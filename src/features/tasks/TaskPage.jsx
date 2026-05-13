@@ -1,72 +1,66 @@
-import React, { useState } from 'react'
-import TaskColumn from './TaskColumn'
+import React, { useEffect, useState } from 'react'
+import TaskColumn from '../../components/TaskColumn'
 import AddTaskModal from './AddTaskModal'
 import { DragDropContext } from '@hello-pangea/dnd';
-import { resumeToPipeableStream } from 'react-dom/server';
+import { useSelector, useDispatch } from 'react-redux';
+import { addTask, updateTask, changeStatus, deleteTask } from "./taskSlice";
+import Alert from '../../components/alert';
+import { logout } from '../auth/authSlice';
+import { Navigate } from 'react-router-dom';
 
 // Main page
 
 function TaskPage() {
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: "Learn React",
-      description: "Practice components",
-      priority: "Medium",
-      status: "Pending",
-    },
+  const [alert, setAlert] = useState(null);
 
-    {
-      id: 2,
-      title: "Build Redux",
-      description: "Create store and slice",
-      priority: "High",
-      status: "In Progress",
-    },
+  const tasks = useSelector(
+    state => state.tasks.tasks // to get data from redux
+  );
 
-    {
-      id: 3,
-      title: "Setup Bootstrap",
-      description: "Install bootstrap package",
-      priority: "Low",
-      status: "Completed",
-    },
-    {
-      id: 4,
-      title: "Watch Tutorial video",
-      description: "How to redux",
-      priority: "High",
-      status: "In Progress",
-    },
-    
-  ]);
+  const dispatch = useDispatch();
 
-  const addTask = (newTask) => {
-    setTasks([...tasks, newTask]);
+  useEffect(() => {
+    if (!alert) return;
+
+    const timerId = setTimeout(() => {
+      setAlert(null);
+    }, 2500); 
+
+    return () => clearTimeout(timerId);
+  }, [alert]);
+
+  const showAlert = (type, message) => {
+    setAlert({ type, message });
   };
 
-  const updateTask = (updatedTask) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
-    );
+  const handleAddTask = (newTask) => {
+    dispatch(addTask(newTask));
+    showAlert('success', 'Task created successfully.');
+  };
+
+  const handleUpdateTask = (updatedTask) => {
+    dispatch(updateTask(updatedTask));
+    showAlert('info', 'Task updated successfully.');
+  };
+
+  const handleDeleteTask = (task) => {
+    const isConfirmed = window.confirm(`Are you sure you want to delete "${task.title}"?`);
+    if (!isConfirmed) return;
+
+    dispatch(deleteTask(task.id));
+    showAlert('danger', `Task deleted successfully.`);
   };
 
   const handleDragEnd = (result) => {
     if(!result.destination) return;
-    
     const taskId = Number(result.draggableId);
     const newStatus = result.destination.droppableId;
-    const updatedTasks = tasks.map((task) => {
-      if (task.id === taskId) {
-        return {
-          ...task,
-          status: newStatus,
-        };
-      }
-      return task;
-    });
+    dispatch(changeStatus({ id: taskId, status: newStatus }));
+  }
 
-    setTasks(updatedTasks);
+  const handleLogout = () => {
+    dispatch(logout());
+    Navigate("/login");
   }
 
   const pendingTasks = tasks.filter(
@@ -84,9 +78,11 @@ function TaskPage() {
   return (
    <div className="container py-4">
 
+      <Alert alert={alert} onClose={() => setAlert(null)} />
+
       <div className="d-flex justify-content-between align-items-center mb-5">
         <h1>Task Manager</h1>
-        <button className="btn btn-danger"> Logout </button>
+        <button className="btn btn-danger" onClick={handleLogout}> Logout </button>
       </div>
 
       <div className="d-flex justify-content-end mb-4">
@@ -97,13 +93,13 @@ function TaskPage() {
   
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="row g-4">
-          <TaskColumn title="Pending" tasks={pendingTasks} updateTask={updateTask} />
-          <TaskColumn title="In Progress" tasks={progressTasks} updateTask={updateTask} />
-          <TaskColumn title="Completed" tasks={completedTasks} updateTask={updateTask} />
+          <TaskColumn title="Pending" tasks={pendingTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} />
+          <TaskColumn title="In Progress" tasks={progressTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} />
+          <TaskColumn title="Completed" tasks={completedTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} />
         </div>
       </DragDropContext>
 
-      <AddTaskModal addTask={addTask}/>
+      <AddTaskModal addTask={handleAddTask}/>
     </div>
   )
 }
