@@ -1,5 +1,6 @@
 import React from 'react'
 import { useState } from 'react';
+import axios from "axios";
 
 // modal for adding new task
 
@@ -9,23 +10,24 @@ function AddTaskModal({addTask}) {
   const [priority, setPriority] = useState("Low");
   const [status, setStatus] = useState("Pending");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const newTask = {
-      id: Date.now(),
-      title,
-      description,
-      priority,
-      status
-    };
+    try {
+      const respone = await axios.post(
+        "http://localhost:5000/api/tasks", 
+        {
+          title,
+          description,
+          priority,
+          status
+        }
+      );
+      console.log(respone.data);
 
-    addTask(newTask);
-
-    setTitle("");
-    setDescription("");
-    setPriority("Low");
-    setStatus("Pending");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (

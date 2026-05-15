@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import TaskColumn from '../../components/TaskColumn'
-import AddTaskModal from './AddTaskModal'
+import AddTaskModal from '../../components/AddTaskModal'
 import { DragDropContext } from '@hello-pangea/dnd';
 import { useSelector, useDispatch } from 'react-redux';
 import { addTask, updateTask, changeStatus, deleteTask } from "./taskSlice";
