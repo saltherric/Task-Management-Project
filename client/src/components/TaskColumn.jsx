@@ -27,6 +27,8 @@ function TaskColumn(props) {
                     task={task} 
                     updateTask={props.updateTask}
                     deleteTask={props.deleteTask}
+                    openEditModal={() => props.openEditModal(task)}
+                    modalId={props.modalId}
                     index={index}
                   />
                 ))

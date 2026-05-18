@@ -12,18 +12,24 @@ function EditTaskModal({ task, updateTask, modalId }) {
   const [status, setStatus] = useState("Pending");
 
   useEffect(() => {
-    if (task) {                                                                                            
+    if (task) {
       setTitle(task.title || "");
       setDescription(task.description || "");
       setPriority(task.priority || "Low");
       setStatus(task.status || "Pending");
+      return;
     }
+
+    setTitle("");
+    setDescription("");
+    setPriority("Low");
+    setStatus("Pending");
   }, [task]); // only run when task changes
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isChanged) return;
+    if (!task || !isChanged) return;
 
     const updatedData = {
       title,
@@ -45,11 +51,12 @@ function EditTaskModal({ task, updateTask, modalId }) {
     }
   };
   
-  const isChanged = task &&
+  const isChanged = !!task && (
     task.title !== title ||
     task.description !== description ||
     task.priority !== priority ||
-    task.status !== status;
+    task.status !== status
+  );
 
   
 

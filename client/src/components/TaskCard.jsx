@@ -6,12 +6,11 @@ import axios from 'axios';
 // Single task card (title, description, priority, status, dropdown menu)
 
 function TaskCard(props) {
-  const modalId = `editTaskModal-${props.task._id}`;
 
   const handleDeleteClick = async () => {
     const isConfirmed = window.confirm(`Are you sure you want to delete "${props.task.title}"?`);
     if (!isConfirmed) return;
-    
+
     try {
       const respone = await axios.delete(`http://localhost:5000/api/tasks/${props.task._id}`);
       if (props.deleteTask){
@@ -21,6 +20,7 @@ function TaskCard(props) {
       console.error('Error deleting task:', error);
     } 
   };
+
 
   return (
     <Draggable 
@@ -43,7 +43,7 @@ function TaskCard(props) {
                     <i className="bi bi-three-dots-vertical"></i>
                   </button>
                   <ul className="dropdown-menu dropdown-menu-end">
-                    <li><button className="dropdown-item" data-bs-toggle="modal" data-bs-target={`#${modalId}`}>Edit</button></li>
+                    <li><button className="dropdown-item" data-bs-toggle="modal" data-bs-target={`#${props.modalId}`} onClick={props.openEditModal}>Edit</button></li>
                     <li><button className="dropdown-item text-danger" onClick={handleDeleteClick}>Delete</button></li>
                   </ul>
                 </div>
@@ -66,7 +66,6 @@ function TaskCard(props) {
                 </span>
               </div>
             </div>
-            <EditTaskModal task={props.task} updateTask={props.updateTask} modalId={modalId}/>
           </div>
         </div>
       )}

@@ -6,16 +6,18 @@ import Alert from '../../components/alert';
 import { logout } from '../auth/authSlice';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
+import EditTaskModal from '../../components/EditTaskModal';
 
 // Main page
 
 function TaskPage() {
   const [alert, setAlert] = useState(null);
-
   const [tasks, setTasks] = useState([]);
-    useEffect(() => {
-        fetchTasks();
-    }, []);
+  const [selectedTask, setSelectedTask] = useState(null);
+
+  useEffect(() => {
+      fetchTasks();
+  }, []);
 
   const fetchTasks = async () => {
     try {
@@ -42,6 +44,8 @@ function TaskPage() {
     setAlert({ type, message });
   };
 
+  const modalId = "editTaskModal";
+
   const handleAddTask = () => {
   fetchTasks();
     showAlert('success', 'Task created successfully.');
@@ -56,6 +60,10 @@ function TaskPage() {
     fetchTasks();
     showAlert('danger', `Task deleted successfully.`);
   };
+
+  const handleOpenEditModal = (task) => {
+    setSelectedTask(task);
+  }
 
   const handleDragEnd = (result) => {
     if(!result.destination) return;
@@ -99,13 +107,14 @@ function TaskPage() {
   
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="row g-4">
-          <TaskColumn title="Pending" tasks={pendingTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} />
-          <TaskColumn title="In Progress" tasks={progressTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} />
-          <TaskColumn title="Completed" tasks={completedTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} />
+          <TaskColumn title="Pending" tasks={pendingTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
+          <TaskColumn title="In Progress" tasks={progressTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
+          <TaskColumn title="Completed" tasks={completedTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
         </div>
       </DragDropContext>
 
       <AddTaskModal addTask={handleAddTask}/>
+      <EditTaskModal task={selectedTask} updateTask={handleUpdateTask} modalId={modalId}/>
     </div>
   )
 }
