@@ -2,22 +2,31 @@ import React, { useEffect, useState } from 'react'
 import TaskColumn from '../../components/TaskColumn'
 import AddTaskModal from '../../components/AddTaskModal'
 import { DragDropContext } from '@hello-pangea/dnd';
-import { useSelector, useDispatch } from 'react-redux';
-import { addTask, updateTask, changeStatus, deleteTask } from "./taskSlice";
 import Alert from '../../components/alert';
 import { logout } from '../auth/authSlice';
 import { Navigate } from 'react-router-dom';
+import axios from 'axios';
 
 // Main page
 
 function TaskPage() {
   const [alert, setAlert] = useState(null);
 
-  const tasks = useSelector(
-    state => state.tasks.tasks // to get data from redux
-  );
+  const [tasks, setTasks] = useState([]);
+    useEffect(() => {
+        fetchTasks();
+    }, []);
 
-  const dispatch = useDispatch();
+  const fetchTasks = async () => {
+    try {
+      const respone = await axios.get(
+          "http://localhost:5000/api/tasks",
+      );
+      setTasks(respone.data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
     if (!alert) return;
@@ -33,21 +42,18 @@ function TaskPage() {
     setAlert({ type, message });
   };
 
-  const handleAddTask = (newTask) => {
-    dispatch(addTask(newTask));
+  const handleAddTask = () => {
+  fetchTasks();
     showAlert('success', 'Task created successfully.');
   };
 
-  const handleUpdateTask = (updatedTask) => {
-    dispatch(updateTask(updatedTask));
+  const handleUpdateTask = () => {
+  fetchTasks();
     showAlert('info', 'Task updated successfully.');
   };
 
-  const handleDeleteTask = (task) => {
-    const isConfirmed = window.confirm(`Are you sure you want to delete "${task.title}"?`);
-    if (!isConfirmed) return;
-
-    dispatch(deleteTask(task.id));
+  const handleDeleteTask = () => {
+    fetchTasks();
     showAlert('danger', `Task deleted successfully.`);
   };
 
@@ -59,8 +65,8 @@ function TaskPage() {
   }
 
   const handleLogout = () => {
-    dispatch(logout());
-    Navigate("/login");
+    // dispatch(logout());
+    // Navigate("/login");
   }
 
   const pendingTasks = tasks.filter(

@@ -23,7 +23,7 @@ function TaskColumn(props) {
               {
                 props.tasks.map((task, index) => (
                   <TaskCard 
-                    key={task.id}
+                    key={task._id}
                     task={task} 
                     updateTask={props.updateTask}
                     deleteTask={props.deleteTask}

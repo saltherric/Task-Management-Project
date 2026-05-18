@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 
 // Bootstrap modal for editing task
 
 function EditTaskModal({ task, updateTask, modalId }) {
+  const closeButton = useRef(null);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("Low");
@@ -17,26 +20,46 @@ function EditTaskModal({ task, updateTask, modalId }) {
     }
   }, [task]); // only run when task changes
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const updatednewTask = {
-      ...task, 
+    if (!isChanged) return;
+
+    const updatedData = {
       title,
       description,
       priority,
-      status,
-    };
-    updateTask(updatednewTask);
+      status
+    }
+    
+    try {
+      const response = await axios.put(`http://localhost:5000/api/tasks/${task._id}`, updatedData);
+      if (updateTask && response.data) {
+        updateTask(response.data);
+      }
+      
+    closeButton.current.click();
+      
+    } catch (err) {
+      console.error('Error updating task:', err);
+    }
   };
+  
+  const isChanged = task &&
+    task.title !== title ||
+    task.description !== description ||
+    task.priority !== priority ||
+    task.status !== status;
+
+  
 
   return (
-    <div className="modal fade" id={modalId} tabIndex={-1} aria-hidden="true">
+    <div className="modal fade" id={modalId} tabIndex={-1} data-bs-backdrop = "static" data-bs-keyboard="false">
       <div className="modal-dialog">
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title">Edit Task</h5>
-            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" ref={closeButton}></button>
           </div>
 
           <div className="modal-body">
@@ -77,7 +100,7 @@ function EditTaskModal({ task, updateTask, modalId }) {
                 <button type="button" className="btn btn-secondary btn-sm me-md-2" data-bs-dismiss="modal">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-sm btn-primary" data-bs-dismiss="modal">
+                <button type="submit" className="btn btn-sm btn-primary" disabled={!isChanged}>
                   Update Task
                 </button>
               </div>
