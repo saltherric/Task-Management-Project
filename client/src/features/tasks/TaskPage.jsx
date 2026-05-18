@@ -65,11 +65,31 @@ function TaskPage() {
     setSelectedTask(task);
   }
 
-  const handleDragEnd = (result) => {
-    if(!result.destination) return;
-    const taskId = Number(result.draggableId);
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+    
+    const taskId = result.draggableId;
     const newStatus = result.destination.droppableId;
-    dispatch(changeStatus({ id: taskId, status: newStatus }));
+    
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task =>
+        task._id === taskId ? { ...task, status: newStatus } : task
+      );
+      // Move the updated task to the end
+      const movedTask = updatedTasks.find(task => task._id === taskId);
+      const otherTasks = updatedTasks.filter(task => task._id !== taskId);
+      return [...otherTasks, movedTask];
+    });
+    
+    try {
+      await axios.put(
+        `http://localhost:5000/api/tasks/${taskId}`,
+        { status: newStatus }
+      );
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      fetchTasks();
+    }
   }
 
   const handleLogout = () => {
