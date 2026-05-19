@@ -1,9 +1,21 @@
-// const { model } = require("mongoose");
 const Task = require("../models/Task");
 
 const createTask = async (req, res) => {
     try {
-        const task = await Task.create(req.body);
+        const {
+            title,
+            description,
+            priority,
+            status,
+        } = req.body;
+
+        const task = await Task.create({
+            title,
+            description,
+            priority,
+            status,
+            user: req.user._id
+        });
         res.status(201).json(task);
     } catch(error) {
         res.status(500).json({
@@ -14,7 +26,9 @@ const createTask = async (req, res) => {
 
 const getTasks = async (req, res) => {
     try {
-        const tasks = await Task.find();
+        const tasks = await Task.find({
+            user: req.user._id,
+        });
         res.status(200).json(tasks);
     } catch (error) {
         res.status(500).json({

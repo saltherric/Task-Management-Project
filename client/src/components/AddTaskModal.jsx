@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import axios from "axios";
+import { getAuthHeaders, getStoredUserInfo } from '../helpers/auth';
 
 // modal for adding new task
 
@@ -30,8 +31,20 @@ function AddTaskModal({addTask}) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const userInfo = getStoredUserInfo();
+
+    if (!userInfo?.token) {
+      console.error('Missing auth token while creating task.');
+      return;
+    }
+
     try {
-      const response = await axios.post("http://localhost:5000/api/tasks", formData);
+      const response = await axios.post("http://localhost:5000/api/tasks", 
+        formData,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
 
       // Inform parent of new task if callback provided
       if (addTask && response && response.data) {

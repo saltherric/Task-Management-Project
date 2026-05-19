@@ -4,6 +4,7 @@ const cors = require("cors");
 
 const connectDB = require("./config/db");
 const taskRoutes = require("./routes/taskRoutes");
+const userRoutes = require("./routes/authRoutes");
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/api/tasks", taskRoutes);
+app.use("/api/auth", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("API Running...");

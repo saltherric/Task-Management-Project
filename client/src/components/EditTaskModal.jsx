@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { getAuthHeaders } from '../helpers/auth';
 
 // Bootstrap modal for editing task
 
@@ -39,7 +40,11 @@ function EditTaskModal({ task, updateTask, modalId }) {
     }
     
     try {
-      const response = await axios.put(`http://localhost:5000/api/tasks/${task._id}`, updatedData);
+      const response = await axios.put(
+        `http://localhost:5000/api/tasks/${task._id}`,
+        updatedData,
+        { headers: getAuthHeaders() }
+      );
       if (updateTask && response.data) {
         updateTask(response.data);
       }

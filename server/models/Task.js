@@ -4,7 +4,7 @@ const taskSchema = new mongoose.Schema(
     {
         title: {
             type: String,
-            require: true,
+            required: true,
         },
 
         description: {
@@ -22,6 +22,11 @@ const taskSchema = new mongoose.Schema(
             enum: ["Pending", "In Progress", "Completed"],
             default: "Pending"
         },
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            dd: true
+        }
     },
     {
         timestamps: true,

@@ -3,10 +3,10 @@ import TaskColumn from '../../components/TaskColumn'
 import AddTaskModal from '../../components/AddTaskModal'
 import { DragDropContext } from '@hello-pangea/dnd';
 import Alert from '../../components/alert';
-import { logout } from '../auth/authSlice';
-import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import EditTaskModal from '../../components/EditTaskModal';
+import { getAuthHeaders, getStoredUserInfo } from '../../helpers/auth';
 
 // Main page
 
@@ -15,16 +15,36 @@ function TaskPage() {
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
 
+  const navigate = useNavigate();
+  
   useEffect(() => {
       fetchTasks();
   }, []);
 
+  // Check for pending alert from previous page (Login)
+  useEffect(() => {
+    const pendingAlert = localStorage.getItem('pendingAlert');
+    if (pendingAlert) {
+      setAlert(JSON.parse(pendingAlert));
+      localStorage.removeItem('pendingAlert');
+    }
+  }, []);
+
   const fetchTasks = async () => {
     try {
-      const respone = await axios.get(
+      const userInfo = getStoredUserInfo();
+      if (!userInfo?.token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await axios.get(
           "http://localhost:5000/api/tasks",
+          {
+            headers: getAuthHeaders(),
+          }
       );
-      setTasks(respone.data);
+      setTasks(response.data);
     } catch (error) {
       console.log(error);
     }
@@ -84,7 +104,8 @@ function TaskPage() {
     try {
       await axios.put(
         `http://localhost:5000/api/tasks/${taskId}`,
-        { status: newStatus }
+        { status: newStatus },
+        { headers: getAuthHeaders() }
       );
     } catch (error) {
       console.error('Error updating task status:', error);
@@ -93,8 +114,9 @@ function TaskPage() {
   }
 
   const handleLogout = () => {
-    // dispatch(logout());
-    // Navigate("/login");
+    // Clear local auth and go to login 
+    localStorage.removeItem("userInfo");
+    navigate("/login");
   }
 
   const pendingTasks = tasks.filter(
