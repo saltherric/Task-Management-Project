@@ -4,9 +4,9 @@ import AddTaskModal from '../../components/AddTaskModal'
 import { DragDropContext } from '@hello-pangea/dnd';
 import Alert from '../../components/alert';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import EditTaskModal from '../../components/EditTaskModal';
 import { getAuthHeaders, getStoredUserInfo } from '../../helpers/auth';
+import API from '../../api/axios';
 
 // Main page
 
@@ -33,18 +33,19 @@ function TaskPage() {
   const fetchTasks = async () => {
     try {
       const userInfo = getStoredUserInfo();
-      if (!userInfo?.token) {
+      if (!userInfo.token) {
         navigate('/login');
         return;
       }
-
-      const response = await axios.get(
-          "http://localhost:5000/api/tasks",
-          {
-            headers: getAuthHeaders(),
-          }
+      // console.log(getStoredUserInfo());
+      // console.log(getAuthHeaders());
+      const response = await API.get("/tasks",
+        {
+          headers: getAuthHeaders(),
+        }
       );
       setTasks(response.data);
+      
     } catch (error) {
       console.log(error);
     }
@@ -102,8 +103,7 @@ function TaskPage() {
     });
     
     try {
-      await axios.put(
-        `http://localhost:5000/api/tasks/${taskId}`,
+      await API.put(`/tasks/${taskId}`,
         { status: newStatus },
         { headers: getAuthHeaders() }
       );

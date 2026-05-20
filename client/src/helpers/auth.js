@@ -13,19 +13,9 @@ export const getAuthToken = () => readStoredUserInfo()?.token || '';
 
 export const getAuthHeaders = () => {
   const token = getAuthToken();
-
   return token
     ? {
         Authorization: `Bearer ${token}`,
       }
     : {};
-};
-
-export const getAuthState = () => {
-  const userInfo = readStoredUserInfo();
-
-  return {
-    currentUser: userInfo,
-    isAuthenticated: Boolean(userInfo?.token),
-  };
 };

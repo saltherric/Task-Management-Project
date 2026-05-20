@@ -24,26 +24,19 @@ const protect = async (req, res, next) => {
             next();
         } catch (error) {
             res.status(401).json({
-                message: "Not authorized"
+                message: error.message,
             });
         }
     }
+    
+    if (!token) {
+        res.status(401);
+        throw new Error("Not authorized");
+    }
+
+    // return res.status(401).json({
+    //     message: "Not authorized"
+    // });
 };
 
 module.exports = { protect };
-
-
-
-// Frontend Login
-//     ↓
-// JWT Token
-//     ↓
-// Frontend stores token
-//     ↓
-// Send token in Authorization header
-//     ↓
-// Backend middleware verifies token
-//     ↓
-// req.user created
-//     ↓
-// Controllers use req.user.id

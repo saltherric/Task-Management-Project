@@ -3,6 +3,7 @@ import EditTaskModal from './EditTaskModal';
 import { Draggable } from '@hello-pangea/dnd';
 import axios from 'axios';
 import { getAuthHeaders } from '../helpers/auth';
+import API from '../api/axios';
 
 // Single task card (title, description, priority, status, dropdown menu)
 
@@ -13,9 +14,10 @@ function TaskCard(props) {
     if (!isConfirmed) return;
 
     try {
-      const respone = await axios.delete(
-        `http://localhost:5000/api/tasks/${props.task._id}`,
-        { headers: getAuthHeaders() }
+      const respone = await API.delete(`/tasks/${props.task._id}`,
+        { 
+          headers: getAuthHeaders() 
+        }
       );
       if (props.deleteTask){
         props.deleteTask();

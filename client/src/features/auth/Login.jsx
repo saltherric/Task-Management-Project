@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Alert from '../../components/alert';
+import API from '../../api/axios';
 
 function Login() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ function Login() {
         email,
         password
       };
-      const response = await axios.post('http://localhost:5000/api/auth/login', user);
+      const response = await API.post('/auth/login', user);
       console.log(response.data);
       
       // save token

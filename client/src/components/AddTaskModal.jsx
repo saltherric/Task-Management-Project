@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import axios from "axios";
 import { getAuthHeaders, getStoredUserInfo } from '../helpers/auth';
+import API from '../api/axios';
 
 // modal for adding new task
 
@@ -39,7 +40,7 @@ function AddTaskModal({addTask}) {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/tasks", 
+      const response = await API.post("/tasks", 
         formData,
         {
           headers: getAuthHeaders(),
