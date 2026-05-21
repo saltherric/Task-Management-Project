@@ -1,0 +1,268 @@
+:root {
+	--color-bg: #F5F7FB;
+	--color-card: #FFFFFF;
+	--color-primary: #2563EB;
+	--color-text: #1E293B;
+	--color-muted: rgba(30, 41, 59, 0.6);
+	--radius-md: 8px;
+	--shadow-sm: 0 1px 2px rgba(16,24,40,0.05), 0 6px 16px rgba(16,24,40,0.06);
+}
+
+html, body, #root {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	background-color: var(--color-bg);
+	color: var(--color-text);
+	font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Center the container and apply the gradient background */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  /* padding: 24px; */
+  gap: 12px;
+}
+
+/* Glassmorphism Card */
+.login-card {
+  background: var(--color-card);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(37, 99, 235, 0.10);
+  border-radius: 24px;
+  padding: 40px 35px;
+  width: min(420px, calc(100vw - 32px));
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(30, 41, 59, 0.10);
+}
+
+/* Title Styling */
+.login-title {
+  color: var(--color-text);
+  font-size: 2.5rem;
+  margin-bottom: 35px;
+  font-weight: 600;
+}
+
+/* Customizing Ant Design Inputs to look transparent and round */
+.antd-custom-input.ant-input-affix-wrapper {
+  background: var(--color-card) !important;
+  border: 1px solid rgba(37, 99, 235, 0.14) !important;
+  border-radius: 12px !important;
+  padding: 10px 20px !important;
+  transition: all 0.3s ease;
+}
+
+/* Targeting the actual text inside the input wrapper */
+.antd-custom-input .ant-input {
+  background: transparent !important;
+  color: var(--color-text) !important;
+  font-size: 1rem;
+}
+
+/* Placeholder Color */
+.antd-custom-input .ant-input::placeholder {
+  color: var(--color-muted) !important;
+}
+
+/* Styling Ant Design icons inside inputs */
+.antd-custom-input .input-icon {
+  color: var(--color-primary) !important;
+  font-size: 1.1rem;
+}
+
+/* Hover and Focus States for Inputs */
+.antd-custom-input.ant-input-affix-wrapper:hover,
+.antd-custom-input.ant-input-affix-wrapper-focused {
+  border-color: var(--color-primary) !important;
+  background: var(--color-card) !important;
+  box-shadow: none !important;
+}
+
+/* Space out Error Validation Text neatly underneath rounded elements */
+.ant-form-item-explain-error {
+  color: #dc2626 !important;
+  text-align: left;
+  padding-left: 15px;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Layout Row for Ant Design Checkbox & link alignment */
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+/* Customizing Ant Design Checkbox text */
+.antd-custom-checkbox {
+  color: var(--color-text) !important;
+}
+
+/* Color the internal checkbox hook to look integrated */
+.antd-custom-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+.antd-custom-checkbox .ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: var(--color-card) !important;
+}
+
+/* Forgot Password Text Link */
+.forgot-password {
+  color: var(--color-primary) !important;
+  font-size: 0.9rem;
+}
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+/* Customizing Ant Design Button into a clean solid white pill */
+.login-button.ant-btn {
+  width: 100% !important;
+  height: auto !important;
+  padding: 12px !important;
+  border: none !important;
+  border-radius: 12px !important;
+  background-color: var(--color-primary) !important;
+  color: var(--color-card) !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.20) !important;
+}
+
+.login-button.ant-btn:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 88%, black) !important;
+  color: var(--color-card) !important;
+}
+
+/* Registration Footer link */
+.register-text {
+  color: var(--color-muted);
+  margin-top: 25px;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+.register-text a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.register-text a:hover {
+  text-decoration: underline;
+}
+
+.register-subtitle {
+  margin: -20px 0 24px;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.auth-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.auth-form .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.app-alert-toast {
+  position: fixed !important;
+  top: 16px;
+  right: 16px;
+  z-index: 2000;
+  width: min(360px, calc(100vw - 32px));
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 576px) {
+  .app-alert-toast {
+    top: 12px;
+    right: 12px;
+    width: calc(100vw - 24px);
+  }
+}
+
+/* Navbar specific styles moved from inline React styles */
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  background-color: #1b61f3;
+}
+
+.brand-text {
+  letter-spacing: -0.5px;
+}
+
+.navbar-search {
+  max-width: 420px;
+}
+
+.search-icon {
+  pointer-events: none;
+}
+
+.navbar-search-input {
+  background-color: #f1f3f5;
+  font-size: 14px;
+  outline: none;
+  box-shadow: none;
+}
+
+.search-clear-btn {
+  font-size: 12px;
+}
+
+.notif-badge {
+  top: 4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  padding: 0;
+}
+
+.notif-dropdown {
+  width: 320px;
+  z-index: 1050;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  background-color: #1b61f3;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  color: #fff;
+  font-weight: 700;
+}
+
+.profile-dropdown {
+  width: 240px;
+  z-index: 1050;
+}
+
+.profile-dropdown-avatar {
+  width: 48px;
+  height: 48px;
+  background-color: #1b61f3;
+  font-size: 18px;
+  color: #fff;
+  font-weight: 700;
+}

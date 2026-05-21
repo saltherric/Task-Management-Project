@@ -1,13 +1,19 @@
 import React from 'react'
+import { Alert as AntdAlert } from 'antd';
 
-function Alert({ alert, onClose }) {
+function Alert({ alert }) {
 	if (!alert) return null;
 
+	const alertType = alert.type === 'danger' ? 'error' : alert.type;
+
 	return (
-		<div className={`alert alert-${alert.type} alert-dismissible fade show`} role="alert">
-			{alert.message}
-			<button type="button" className="btn-close" aria-label="Close" onClick={onClose} ></button>
-		</div>
+		<AntdAlert
+			className="app-alert-toast"
+			type={alertType}
+			message={alert.message}
+			showIcon	
+			style={{ textAlign: 'left' }}
+		/>
 	);
 }
 

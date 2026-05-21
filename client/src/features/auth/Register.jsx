@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios  from 'axios';
+import { Button, Form, Input } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import Alert from '../../components/alert';
+import API from '../../api/axios';
 
 function Register() {
   const navigate = useNavigate();
   const [alert, setAlert] = useState(null);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // const [username, setUsername] = useState("");
+  // const [email, setEmail] = useState("");
+  // const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (!alert) return;
@@ -24,22 +27,19 @@ function Register() {
     setAlert({ type, message });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (values) => {
     try {
-      e.preventDefault();
+      const { username, email, password } = values;
       const user = {
         username,
         email,
         password
       }
-      const response = await axios.post('http://localhost:5000/api/auth/register', user);
+      const response = await API.post('/auth/register', user);
       console.log(response.data);
-      
-      // save token
-      localStorage.setItem(
-        'userInfo',
-        JSON.stringify(response.data)
-      );
+
+      // Registration should not authenticate the user.
+      localStorage.removeItem('userInfo');
      
        // Store alert to display on next page
        localStorage.setItem(
@@ -57,55 +57,57 @@ function Register() {
   }
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-12 col-sm-8 col-md-5 col-lg-4">
-          <div className="auth-card p-4 border rounded shadow-sm">
-            <Alert alert={alert} onClose={() => setAlert(null)} />
-            <h1 className="auth-title text-center h3 mb-4">Create Account</h1>
-            
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
-                <label className="form-label">Username</label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  placeholder="Enter username" 
-                  value={username} 
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </div>
+    <div className="login-container">
+      <Alert alert={alert} onClose={() => setAlert(null)} />
+      <div className="login-card">
+        <h1 className="login-title">Register</h1>
+        <p className="register-subtitle">Create your account to start managing tasks.</p>
 
-              <div className="mb-3">
-                <label className="form-label">Email</label>
-                <input
-                  type="email" 
-                  className="form-control" 
-                  placeholder="Enter email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+        <Form
+          name="register_form"
+          onFinish={handleSubmit}
+          requiredMark={false} // Hides the red asterisks
+          layout="vertical"
+          className="auth-form"
+        >
+          {/* Username Input */}
+          <Form.Item name="username" rules={[{ required: true, message: 'Please input your Username!' }]}>
+            <Input prefix={<UserOutlined className="input-icon" />} placeholder="Username" 
+              className="antd-custom-input"
+            />
+          </Form.Item>
 
-              <div className="mb-4">
-                <label className="form-label">Password</label>
-                <input
-                  type="password" 
-                  className="form-control" 
-                  placeholder="Enter password" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
+          {/* Email Input */}
+          <Form.Item name="email" rules={[{ required: true, message: 'Please input your Email!' }]}>
+            <Input prefix={<MailOutlined className="input-icon" />} placeholder="Email" 
+              className="antd-custom-input"
+            />
+          </Form.Item>
 
-              <button type="submit" className="btn btn-primary w-100">Register</button>          
-            </form>
-          </div>
+          {/* Password Input */}
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: 'Please input your Password!' }]}
+          >
+            <Input.Password 
+              placeholder="Password" 
+              prefix={<LockOutlined className="input-icon" />} 
+              className="antd-custom-input"
+            />
+          </Form.Item>
 
-        </div>
+          {/* Submit Button */}
+          <Form.Item>
+            <Button type="primary" htmlType='submit' className="login-button" >
+              Register
+            </Button>
+          </Form.Item>
+        </Form>
+
+        {/* Footer */}
+        <p className="register-text">
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
       </div>
     </div>
   );
