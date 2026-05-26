@@ -1,18 +1,37 @@
-import React from 'react'
-import { useState } from 'react';
+import React, { useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
+import { ThemeContext } from '../context/themeContext';
 
 export default function Navbar() {
-    // State for search query
     const [searchQuery, setSearchQuery] = useState('');
     
+    const { theme, toggleTheme } = useContext(ThemeContext);
+
     const navigate = useNavigate();
+
+    const [currentUser, setCurrentUser] = useState(() => {
+      try {
+        const rawUserInfo = localStorage.getItem('userInfo');
+        const storedUserInfo = rawUserInfo ? JSON.parse(rawUserInfo) : null;
+
+        return {
+          name: storedUserInfo?.name || storedUserInfo?.username || storedUserInfo?.fullName || 'Guest',
+          email: storedUserInfo?.email || '',
+        };
+      } catch {
+        return {
+          name: 'Guest',
+          email: '',
+        };
+      }
+    });
 
     // State for notifications
     const [notifications, setNotifications] = useState([
         { id: 1, text: "New task assigned: 'Database migration'", time: "5m ago", read: false },
         { id: 2, text: "Sarah commented on your task 'Design feedback'", time: "1h ago", read: false },
-        { id: 3, text: "Project 'TaskMe Redesign' deadline updated", time: "3h ago", read: false }
+        { id: 3, text: "Project 'TaskMe Redesign' deadline updated", time: "3h ago", read: false },
+        { id: 4, text: "Project 'TaskMe Redesign' deadline updated", time: "3h ago", read: false }
     ]);
     const [showNotifDropdown, setShowNotifDropdown] = useState(false);
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -25,8 +44,6 @@ export default function Navbar() {
         { id: 4, title: "Create product pitch slides", category: "Marketing", status: "In Progress", priority: "Low" },
         { id: 5, title: "Update Bootstrap 5 dependency guidelines", category: "Documentation", status: "To Do", priority: "Medium" }
     ]);
-
-    // Note: Bootstrap CSS should be included globally (index.html or main entry)
 
     // Filter tasks based on search query in the navbar
     const filteredTasks = tasks.filter(task => 
@@ -47,17 +64,25 @@ export default function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("userInfo")
+    setCurrentUser({ name: 'Guest', email: '' });
     navigate("/login");
   }
 
+  const profileInitials = (currentUser?.name || 'G')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'G';
+
   return (
     <div>
-      <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom py-2 px-3 sticky-top shadow-sm">
+      <nav className="navbar navbar-expand-lg border-bottom py-2 px-3 sticky-top shadow-sm">
         <div className="container-fluid d-flex align-items-center justify-content-between">
           
           {/* Brand Logo & Name */}
           <div className="d-flex align-items-center" style={{ cursor: 'pointer' }}>
-            {/* Styled Logo matching the image check+ circle */}
             <div 
               className="d-flex align-items-center justify-content-center rounded-circle me-2 brand-logo"
             >
@@ -68,13 +93,13 @@ export default function Navbar() {
                 <path d="M19 13V19M16 16H22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="fs-4 fw-bold text-dark brand-text">TaskMe</span>
+            <span className="fs-4 fw-bold theme-text brand-text">TaskMe</span>
           </div>
 
           {/* Interactive Search Bar (Centered visually, responsive size) */}
           <div className="flex-grow-1 mx-3 mx-md-5 navbar-search">
             <div className="position-relative">
-              <span className="position-absolute top-50 start-0 translate-middle-y ps-3 text-muted search-icon">
+              <span className="position-absolute top-50 start-0 translate-middle-y ps-3 text-start search-icon">
                 {/* Search Icon SVG */}
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
@@ -83,14 +108,14 @@ export default function Navbar() {
               </span>
               <input
                 type="text"
-                className="form-control border-0 rounded-pill py-2 ps-5 pe-3 text-secondary navbar-search-input"
+                className="form-control border-0 rounded-pill py-2 ps-5 pe-3 navbar-search-input"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
                 <button 
-                  className="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3 text-muted border-0 shadow-none text-decoration-none search-clear-btn"
+                  className="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3 text-start border-0 shadow-none text-decoration-none search-clear-btn"
                   onClick={() => setSearchQuery('')}
                 >
                   ✕
@@ -100,7 +125,18 @@ export default function Navbar() {
           </div>
 
           {/* Right Action Icons */}
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-2">
+            {/* Toggle theme background */}
+            <button
+              className="btn border-0 shadow-none theme-toggle-btn"
+              onClick={toggleTheme}
+            >
+              {theme === "light" ? (
+                <i className="fa-solid fa-sun"></i>
+              ) : (
+                <i className="fa-solid fa-moon"></i>
+              )}
+            </button>
             
             {/* Notification Bell with Dropdown */}
             <div className="position-relative">
@@ -126,14 +162,14 @@ export default function Navbar() {
                   </span>
                 )}
               </button>
-
+              
               {/* Notification Dropdown Menu */}
               {showNotifDropdown && (
                 <div 
-                  className="position-absolute end-0 mt-2 bg-white rounded shadow-lg border p-2 notif-dropdown"
+                  className="position-absolute end-0 mt-2 rounded shadow-lg border p-2 notif-dropdown theme-card"
                 >
                   <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2 px-2">
-                    <span className="fw-bold text-dark small">Notifications ({unreadCount})</span>
+                    <span className="fw-bold theme-text small">Notifications ({unreadCount})</span>
                     {unreadCount > 0 && (
                       <button className="btn btn-link p-0 text-decoration-none text-primary small" style={{ fontSize: '12px' }} onClick={markAllAsRead}>
                         Mark all read
@@ -141,20 +177,20 @@ export default function Navbar() {
                     )}
                   </div>
                   {notifications.length === 0 ? (
-                    <div className="text-center py-4 text-muted small">No notifications found</div>
+                    <div className="text-center py-4 text-start small">No notifications found</div>
                   ) : (
                     <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
                       {notifications.map((notif) => (
                         <div 
                           key={notif.id} 
-                          className={`p-2 rounded mb-1 d-flex justify-content-between align-items-start transition ${notif.read ? 'bg-white' : 'bg-light'}`}
+                          className={`p-2 rounded mb-1 d-flex justify-content-between align-items-start transition ${notif.read ? 'theme-card' : 'bg-light'}`}
                         >
                           <div>
-                            <p className="mb-0 text-dark small" style={{ lineHeight: '1.3' }}>{notif.text}</p>
-                            <span className="text-muted" style={{ fontSize: '10px' }}>{notif.time}</span>
+                            <p className="mb-0 theme-text small" style={{ lineHeight: '1.3' }}>{notif.text}</p>
+                            <span className="text-start" style={{ fontSize: '10px' }}>{notif.time}</span>
                           </div>
                           <button 
-                            className="btn btn-link text-muted p-0 ms-2 text-decoration-none" 
+                            className="btn btn-link text-start p-0 ms-2 text-decoration-none" 
                             style={{ fontSize: '14px' }} 
                             onClick={() => removeNotification(notif.id)}
                           >
@@ -177,22 +213,22 @@ export default function Navbar() {
                   setShowNotifDropdown(false);
                 }}
               >
-                CA
+                {profileInitials}
               </div>
 
               {/* Profile Dropdown Menu */}
               {showProfileDropdown && (
                 <div 
-                  className="position-absolute end-0 mt-2 bg-white rounded shadow-lg border p-3 profile-dropdown"
+                  className="position-absolute end-0 mt-2 theme-card rounded shadow-lg border p-3 profile-dropdown"
                 >
                   <div className="text-center border-bottom pb-3 mb-2">
                     <div 
                       className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold mx-auto mb-2 profile-dropdown-avatar"
                     >
-                      CA
+                      {profileInitials}
                     </div>
-                    <h6 className="mb-0 text-dark fw-bold">Charles Austin</h6>
-                    <small className="text-muted">charles.austin@taskme.com</small>
+                    <h6 className="mb-0 theme-text fw-bold">{currentUser?.name || 'User'}</h6>
+                    <small className="text-start">{currentUser?.email || 'No email available'}</small>
                   </div>
                   <div className="d-grid gap-1">
                     <button className="btn btn-sm btn-outline-secondary border-0 text-start">My Settings</button>
@@ -202,7 +238,7 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-
+              
           </div>
         </div>
       </nav>

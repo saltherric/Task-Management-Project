@@ -16,7 +16,28 @@ const userSchema = new mongoose.Schema(
         password: {
             type: String,
             required: true,
-        }
+        },
+
+        avatar: {
+            type: String,
+            default: '',
+        },
+
+        role: {
+            type: String,
+            enum: ['admin', 'member'],
+            default: 'member',
+        },
+
+        telegramChatId: {
+            type: String,
+            default: null,
+        },
+
+        isActive: {
+            type: Boolean,
+            default: true,
+        },
     },
     {
         timestamps: true,

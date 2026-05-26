@@ -6,8 +6,8 @@ import { Droppable } from '@hello-pangea/dnd';
 
 function TaskColumn(props) {
   return (
-    <div className="col-md-4">
-      <div className="card h-100">
+    <div className="task-column">
+      <div className="card">
         <div className="card-header d-flex justify-content-between">
           <h5>{props.title}</h5>
           <span className={`badge ${

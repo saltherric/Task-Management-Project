@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react'
 import TaskColumn from '../../components/TaskColumn'
 import AddTaskModal from '../../components/AddTaskModal'
 import { DragDropContext } from '@hello-pangea/dnd';
-import Alert from '../../components/Alert';
+import Alert from '../../components/alert';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import EditTaskModal from '../../components/EditTaskModal';
-import { getAuthHeaders, getStoredUserInfo } from '../../helpers/auth';
-import API from '../../api/axios';
 import Navbar from '../../components/Navbar';
+import { getAuthHeaders, getStoredUserInfo } from '../../helpers/auth';
 
 // Main page
 
@@ -17,7 +17,7 @@ function TaskPage() {
   const [selectedTask, setSelectedTask] = useState(null);
 
   const navigate = useNavigate();
-  
+
   useEffect(() => {
       fetchTasks();
   }, []);
@@ -34,19 +34,16 @@ function TaskPage() {
   const fetchTasks = async () => {
     try {
       const userInfo = getStoredUserInfo();
+
       if (!userInfo?.token) {
         navigate('/login');
         return;
       }
-      // console.log(getStoredUserInfo());
-      // console.log(getAuthHeaders());
-      const response = await API.get("/tasks",
-        {
-          headers: getAuthHeaders(),
-        }
-      );
+
+      const response = await axios.get('http://localhost:5000/api/tasks', {
+        headers: getAuthHeaders(),
+      });
       setTasks(response.data);
-      
     } catch (error) {
       console.log(error);
     }
@@ -104,9 +101,12 @@ function TaskPage() {
     });
     
     try {
-      await API.put(`/tasks/${taskId}`,
+      await axios.put(
+        `http://localhost:5000/api/tasks/${taskId}`,
         { status: newStatus },
-        { headers: getAuthHeaders() }
+        {
+          headers: getAuthHeaders(),
+        }
       );
     } catch (error) {
       console.error('Error updating task status:', error);
@@ -114,11 +114,10 @@ function TaskPage() {
     }
   }
 
-  // const handleLogout = () => {
-  //   // Clear local auth and go to login 
-  //   localStorage.removeItem("userInfo");
-  //   navigate("/login");
-  // }
+  const handleLogout = () => {
+    localStorage.removeItem("userInfo");
+    navigate("/login");
+  }
 
   const pendingTasks = tasks.filter(
     task => task.status === "Pending"
@@ -134,33 +133,28 @@ function TaskPage() {
 
   return (
     <>
-      <Navbar />
-      <div className="container py-4">  
-        <Alert alert={alert} onClose={() => setAlert(null)} />
-        {/* <div className="d-flex justify-content-between align-items-center mb-5">
-          <h1>Task Manager</h1>
-          <button className="btn btn-danger" onClick={handleLogout}> Logout </button>
-        </div> */}
-
-        <div className="d-flex justify-content-end mb-4">
+      <Navbar/>
+      <div className="task-page-container">
+        <Alert alert={alert}/>
+        {/* <div className="d-flex justify-content-end mb-4">
           <button type="button" className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal"> 
             Add New Task
           </button>
-        </div>
+        </div> */}
     
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="row g-4">
-            <TaskColumn title="Pending" tasks={pendingTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
-            <TaskColumn title="In Progress" tasks={progressTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
-            <TaskColumn title="Completed" tasks={completedTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
+          <div className="task-board">
+              <TaskColumn title="Pending" tasks={pendingTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
+              <TaskColumn title="In Progress" tasks={progressTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
+              <TaskColumn title="Completed" tasks={completedTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
           </div>
+          
         </DragDropContext>
 
         <AddTaskModal addTask={handleAddTask}/>
         <EditTaskModal task={selectedTask} updateTask={handleUpdateTask} modalId={modalId}/>
       </div>
     </>
-  
   )
 }
 export default TaskPage

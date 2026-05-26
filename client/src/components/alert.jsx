@@ -10,7 +10,7 @@ function Alert({ alert }) {
 		<AntdAlert
 			className="app-alert-toast"
 			type={alertType}
-			message={alert.message}
+			title={alert.message}
 			showIcon	
 			style={{ textAlign: 'left' }}
 		/>

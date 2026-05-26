@@ -1,25 +1,135 @@
-:root {
-	--color-bg: #F5F7FB;
-	--color-card: #FFFFFF;
-	--color-primary: #2563EB;
-	--color-text: #1E293B;
-	--color-muted: rgba(30, 41, 59, 0.6);
-	--radius-md: 8px;
-	--shadow-sm: 0 1px 2px rgba(16,24,40,0.05), 0 6px 16px rgba(16,24,40,0.06);
+#root {
+  height: 100%;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
-html, body, #root {
-	height: 100%;
+body, html {
+  margin: 0;
+  height: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-	margin: 0;
-	background-color: var(--color-bg);
-	color: var(--color-text);
-	font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
+/* Apply theme colors to Bootstrap components */
+.card {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: rgba(37, 99, 235, 0.15) !important;
 }
+
+.card-body {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+}
+
+.card-title {
+	color: var(--color-text) !important;
+}
+
+.card-text {
+	color: var(--color-muted) !important;
+}
+
+.navbar {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.form-control, .form-select {
+	background-color: var(--color-bg) !important;
+	color: var(--color-text) !important;
+	border-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.form-control:focus, .form-select:focus {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: var(--color-primary) !important;
+	box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25) !important;
+}
+
+.btn-light {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.btn-light:hover {
+	background-color: var(--color-primary) !important;
+	color: var(--color-card) !important;
+}
+
+.dropdown-menu {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.dropdown-item {
+	color: var(--color-text) !important;
+}
+
+.dropdown-item:hover, .dropdown-item:active {
+	background-color: var(--color-primary) !important;
+	color: var(--color-card) !important;
+}
+
+.alert {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.modal-content {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+}
+
+.modal-header {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.theme-text {
+	color: var(--color-text) !important;
+}
+
+.theme-muted {
+	color: var(--color-muted) !important;
+}
+
+.theme-bg {
+	background-color: var(--color-bg) !important;
+}
+
+.theme-card {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+}
+
+.theme-input {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border: 1px solid rgba(37, 99, 235, 0.15) !important;
+}
+
+.theme-input::placeholder {
+	color: var(--color-muted) !important;
+}
+
 
 /* Center the container and apply the gradient background */
 .login-container {
@@ -183,7 +293,7 @@ body {
 
 .app-alert-toast {
   position: fixed !important;
-  top: 16px;
+  bottom: 16px;
   right: 16px;
   z-index: 2000;
   width: min(360px, calc(100vw - 32px));
@@ -218,10 +328,16 @@ body {
 }
 
 .navbar-search-input {
-  background-color: #f1f3f5;
-  font-size: 14px;
-  outline: none;
-  box-shadow: none;
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	font-size: 14px;
+	outline: none;
+	box-shadow: none !important;
+}
+
+.navbar-search-input:focus {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
 }
 
 .search-clear-btn {
@@ -265,4 +381,61 @@ body {
   font-size: 18px;
   color: #fff;
   font-weight: 700;
+}
+
+.task-board {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  height: auto;
+
+  padding-bottom: 1rem;
+
+  scroll-behavior: smooth;
+}
+
+.task-column {
+  flex: 0 0 320px;
+  height: auto;
+}
+
+.task-column .card {
+  height: auto;
+}
+
+.task-column .card-body {
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Optional scrollbar styling */
+
+.task-board::-webkit-scrollbar {
+  height: 8px;
+}
+
+.task-board::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.task-column .card-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.task-column .card-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.task-page-container {
+  padding: 1rem;
+  min-height: calc(100vh - 72px);
+  height: auto;
+  overflow: hidden;
 }

@@ -1,0 +1,35 @@
+:root, [data-theme="light"] {
+	--color-bg: #F5F7FB;
+	--color-card: #FFFFFF;
+	--color-primary: #2563EB;
+	--color-text: #1E293B;
+	--color-muted: rgba(30, 41, 59, 0.6);
+	--radius-md: 8px;
+	--shadow-sm: 0 1px 2px rgba(16,24,40,0.05), 0 6px 16px rgba(16,24,40,0.06);
+}
+
+/* Dark Theme */
+.dark, [data-theme="dark"] {
+	--color-bg: #0F172A;
+	--color-card: #1E293B;
+	--color-primary: #3B82F6;   
+	--color-text: #F8FAFC;
+	--color-muted: rgba(248, 250, 252, 0.6);
+	--radius-md: 8px;
+	--shadow-sm: 0 1px 2px rgba(0,0,0,0.4), 0 6px 16px rgba(0,0,0,0.35);
+}
+
+.theme-toggle-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-card);
+  color: var(--color-text);
+  transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  transform: scale(1.05);
+}

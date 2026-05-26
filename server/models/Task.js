@@ -9,30 +9,79 @@ const taskSchema = new mongoose.Schema(
 
         description: {
             type: String,
+            default: '',
+        },
+
+        project: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Project',
+            required: true,
+        },
+
+        column: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Column',
+            required: true,
+        },
+
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
+
+        assignedTo: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User',
+            }
+        ],
+
+        status: {
+            type: String,
+            enum: [
+                'todo',
+                'inprogress',
+                'review',
+                'done',
+            ],
+            default: 'todo',
         },
 
         priority: {
             type: String,
-            enum: ["Low", "Medium", "High"],
-            default: "Low",
+            enum: [
+                'low',
+                'medium',
+                'high',
+            ],
+            default: 'medium',
         },
 
-        status: {
-            type: String,
-            enum: ["Pending", "In Progress", "Completed"],
-            default: "Pending"
+        smartPriorityScore: {
+            type: Number,
+            default: 0,
         },
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            dd: true
-        }
+
+        tags: [String],
+
+        dueDate: Date,
+
+        position: {
+            type: Number,
+            required: true,
+        },
+
+        completedAt: Date,
+
+        isArchived: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
-        timestamps: true,
+    timestamps: true,
     }
 );
 
 module.exports = mongoose.model("Task", taskSchema);
-
-// Setup backend API
