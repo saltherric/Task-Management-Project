@@ -1,0 +1,40 @@
+const mongoose = require('mongoose');
+const Workspace = require('../models/Workspace');
+
+const validateWorkspace = async (req, res, next) => {
+  try {
+    const workspace = req.body.workspace || req.params.workspace || req.query.workspace;
+    if (!workspace) {
+        return res.status(400).json({ 
+            message: 'Workspace is required' 
+        });
+    }
+    if (!mongoose.Types.ObjectId.isValid(workspace)) {
+        return res.status(400).json({ 
+            message: 'Invalid workspace id' 
+        });
+    }
+
+    const existingWorkspace = await Workspace.findById(workspace);
+    if (!existingWorkspace) {
+        return res.status(404).json({ 
+            message: 'Workspace not found' 
+        });
+    }
+
+    const isMember = Array.isArray(existingWorkspace.members) &&
+      existingWorkspace.members.map(m => m.toString()).includes(req.user._id.toString());
+    if (!isMember && req.user.role !== 'admin') {
+        return res.status(403).json({ 
+            message: 'You are not a member of this workspace' 
+        });
+    }
+
+    req.workspace = existingWorkspace;
+    next();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { validateWorkspace };

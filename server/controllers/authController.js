@@ -20,6 +20,7 @@ const registerUser = async (req, res) => {
             username,
             email,
             password: hashPassword,
+            role: "member",
         });
 
         // generate token
@@ -34,6 +35,7 @@ const registerUser = async (req, res) => {
             _id: user._id,
             username: user.username,
             email: email,
+            role: user.role,
             token,
         })
     } catch (error) {
@@ -47,7 +49,7 @@ const loginUser = async (req, res) => {
         // find user
         const userLogined = await User.findOne({email});
         if (!userLogined) {
-            res.status(400).json({
+            return res.status(400).json({
                 message: "Invalid Email or Password."
             });
         }
@@ -71,6 +73,7 @@ const loginUser = async (req, res) => {
             _id: userLogined._id,
             username: userLogined.username,
             email: userLogined.email,
+            role: userLogined.role,
             token
         });
 

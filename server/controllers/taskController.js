@@ -1,22 +1,44 @@
 const Task = require("../models/Task");
+const Project = require("../models/Project"); 
+const Column = require("../models/Column");
 
 const createTask = async (req, res) => {
     try {
         const {
             title,
-            description,
-            priority,
-            status,
+            description = '',
+            assignedTo = [],
+            status = 'todo',
+            priority = 'medium',
+            smartPriorityScore = 0,
+            tags = [],
+            dueDate,
         } = req.body;
 
+        if (!title) return res.status(400).json({ message: 'title is required'});
+
+        const project = req.project._id;
+        const column = req.column._id;
+
+        // position: append to end of column
+        const last = await Task.findOne({ column }).sort('-position').select('position');
+        const position = last ? last.position + 1 : 1;
+
         const task = await Task.create({
-            title,
+           title,
             description,
-            priority,
+            project,
+            column,
+            createdBy: req.user._id,
+            assignedTo,
             status,
-            user: req.user._id
+            priority,
+            smartPriorityScore,
+            tags,
+            dueDate,
+            position,
         });
-        res.status(201).json(task);
+    res.status(201).json(task);
     } catch(error) {
         res.status(500).json({
             message: error.message,
@@ -25,17 +47,21 @@ const createTask = async (req, res) => {
 };
 
 const getTasks = async (req, res) => {
-    try {
-        const tasks = await Task.find({
-            user: req.user._id,
-        });
-        res.status(200).json(tasks);
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-}
+  try {
+    const userId = req.user._id;
+    const tasks = await Task.find({
+      $or: [{ createdBy: userId }, { assignedTo: userId }],
+    })
+      .populate('project')
+      .populate('column')
+      .populate('assignedTo', 'username email')
+      .populate('createdBy', 'username email')
+      .sort({ position: 1, createdAt: -1 });
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 const getTaskById = async (req, res) => {
     try {
@@ -58,7 +84,7 @@ const updateTask = async (req, res) => {
         const task = await Task.findByIdAndUpdate(
             {
                 _id: req.params.id,
-                user: req.user._id,
+                $or: [{ createdBy: req.user._id }, { assignedTo: req.user._id }],
             },
             req.body,
             { new: true }
@@ -77,30 +103,24 @@ const updateTask = async (req, res) => {
 }
 
 const deleteTask = async (req, res) => {
-    try {
-        const task = await Task.findByIdAndDelete({
-            _id: req.params.id,
-            user: req.user._id,
-        }
-        );
-        if (!task) {
-            return res.status(404).json({
-                message: 'Task not found or Unauthorized!'
-            });
-        };
-        res.status(200).json(task);
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+  try {
+    let task;
+    if (req.user.role === 'admin') {
+      task = await Task.findByIdAndDelete(req.params.id);
+    } else {
+      task = await Task.findOneAndDelete({ _id: req.params.id, createdBy: req.user._id });
     }
-    
+    if (!task) return res.status(404).json({ message: 'Task not found or Unauthorized!' });
+    res.status(200).json(task);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-}
 module.exports = {
     createTask,
     getTasks,
     getTaskById,
     updateTask,
     deleteTask
-}
+};
