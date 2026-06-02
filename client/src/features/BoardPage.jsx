@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import TaskColumn from '../../components/TaskColumn'
-import AddTaskModal from '../../components/AddTaskModal'
+import TaskColumn from '../components/TaskColumn'
+import AddTaskModal from '../components/AddTaskModal'
 import { DragDropContext } from '@hello-pangea/dnd';
-import Alert from '../../components/alert';
+import Alert from '../components/alert';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import EditTaskModal from '../../components/EditTaskModal';
-import Navbar from '../../components/Navbar';
-import { getAuthHeaders, getStoredUserInfo } from '../../helpers/auth';
+import EditTaskModal from '../components/EditTaskModal';
+import Navbar from '../components/navbar/Navbar';
+import { getAuthHeaders, getStoredUserInfo } from '../helpers/auth';
+import API from '../api/axios';
+import Sidebar from '../components/Sidebar';
 
 // Main page
 
-function TaskPage() {
+function BoardPage() {
   const [alert, setAlert] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -40,8 +42,8 @@ function TaskPage() {
         return;
       }
 
-      const response = await axios.get('http://localhost:5000/api/tasks', {
-        headers: getAuthHeaders(),
+      const response = await API.get('/tasks', {
+        headers: getAuthHeaders(),  
       });
       setTasks(response.data);
     } catch (error) {
@@ -101,8 +103,7 @@ function TaskPage() {
     });
     
     try {
-      await axios.put(
-        `http://localhost:5000/api/tasks/${taskId}`,
+      await API.put(`/tasks/${taskId}`,
         { status: newStatus },
         {
           headers: getAuthHeaders(),
@@ -119,28 +120,32 @@ function TaskPage() {
     navigate("/login");
   }
 
-  const pendingTasks = tasks.filter(
-    task => task.status === "Pending"
-  );
-
-  const progressTasks = tasks.filter(
-    task => task.status === "In Progress"
-  );
-
-  const completedTasks = tasks.filter(
-    task => task.status === "Completed"
-  );
-
   return (
     <>
-      <Navbar/>
-      <div className="task-page-container">
-        <Alert alert={alert}/>
-        {/* <div className="d-flex justify-content-end mb-4">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Navbar />
+
+        <div className="flex">
+          <Sidebar />
+            
+          <Alert alert={alert}/>
+
+          <main className="flex-1 p-6">
+            Content
+          </main>
+        </div>
+      </div>
+
+      {/* <Navbar/>
+      <Sidebar/>
+      <Alert alert={alert}/> */}
+      {/* <div className="task-page-container">
+        
+        <div className="d-flex justify-content-end mb-4">
           <button type="button" className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal"> 
             Add New Task
           </button>
-        </div> */}
+        </div>
     
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="task-board">
@@ -150,11 +155,11 @@ function TaskPage() {
           </div>
           
         </DragDropContext>
-
         <AddTaskModal addTask={handleAddTask}/>
         <EditTaskModal task={selectedTask} updateTask={handleUpdateTask} modalId={modalId}/>
-      </div>
+      </div> */}
     </>
   )
+  
 }
-export default TaskPage
+export default BoardPage

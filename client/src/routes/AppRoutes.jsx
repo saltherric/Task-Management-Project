@@ -1,8 +1,8 @@
 import React from 'react'
 import {BrowserRouter, Routes, Route} from 'react-router-dom';
-import Login from '../features/auth/Login';
-import Register from '../features/auth/Register';
-import TaskPage from '../features/tasks/TaskPage';
+import Login from '../features/LoginPage';
+import Register from '../features/RegisterPage';
+import BoardPage from '../features/BoardPage';
 import ProtectedRoute from '../components/ProtectedRoute'
 function AppRoutes() {
   return (
@@ -13,7 +13,7 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/home" element={
           <ProtectedRoute>
-            <TaskPage />
+            <BoardPage />
           </ProtectedRoute>
         }/>
       </Routes>

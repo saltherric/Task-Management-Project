@@ -22,7 +22,6 @@ export const getAuthHeaders = () => {
 
 export const getAuthState = () => {
   const userInfo = readStoredUserInfo();
-
   return {
     currentUser: userInfo,
     isAuthenticated: Boolean(userInfo?.token),

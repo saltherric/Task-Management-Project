@@ -1,0 +1,221 @@
+@import "tailwindcss";
+
+#root {
+  height: 100%;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+body, html {
+  margin: 0;
+  height: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+
+.alert {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+
+/* Customizing Ant Design Inputs to look transparent and round */
+.antd-custom-input.ant-input-affix-wrapper {
+  background: var(--color-card) !important;
+  border: 1px solid rgba(37, 99, 235, 0.14) !important;
+  border-radius: 12px !important;
+  padding: 10px 20px !important;
+  transition: all 0.3s ease;
+}
+
+/* Targeting the actual text inside the input wrapper */
+.antd-custom-input .ant-input {
+  background: transparent !important;
+  color: var(--color-text) !important;
+  font-size: 1rem;
+}
+
+/* Placeholder Color */
+.antd-custom-input .ant-input::placeholder {
+  color: var(--color-muted) !important;
+  
+}
+
+/* Styling Ant Design icons inside inputs */
+.antd-custom-input .input-icon {
+  color: var(--color-primary) !important;
+  font-size: 1.1rem;padding-right: 10px;
+}
+
+/* Hover and Focus States for Inputs */
+.antd-custom-input.ant-input-affix-wrapper:hover,
+.antd-custom-input.ant-input-affix-wrapper-focused {
+  border-color: var(--color-primary) !important;
+  background: var(--color-card) !important;
+  box-shadow: none !important;
+}
+
+/* Space out Error Validation Text neatly underneath rounded elements */
+.ant-form-item-explain-error {
+  color: #dc2626 !important;
+  text-align: left;
+  padding: 0px  0px 15px 15px ;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Customizing Ant Design Checkbox text */
+.antd-custom-checkbox {
+  color: var(--color-text) !important;
+}
+
+/* Color the internal checkbox hook to look integrated */
+.antd-custom-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+.antd-custom-checkbox .ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: var(--color-card) !important;
+}
+
+/* Forgot Password Text Link */
+.forgot-password {
+  color: var(--color-primary) !important;
+  font-size: 0.9rem;
+}
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+/* Customizing Ant Design Button into a clean solid white pill */
+.login-button.ant-btn {
+  width: 100% !important;
+  height: auto !important;
+  padding: 12px !important;
+  border: none !important;
+  border-radius: 12px !important;
+  background-color: var(--color-primary) !important;
+  color: var(--color-card) !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.20) !important;
+}
+
+.login-button.ant-btn:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 88%, black) !important;
+  color: var(--color-card) !important;
+}
+
+.register-text a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.register-text a:hover {
+  text-decoration: underline;
+}
+
+.register-subtitle {
+  margin: -20px 0 24px;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.auth-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.auth-form .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.app-alert-toast {
+  position: fixed !important;
+  bottom: 16px;
+  right: 16px;
+  z-index: 2000;
+  width: min(360px, calc(100vw - 32px));
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 576px) {
+  .app-alert-toast {
+    top: 12px;
+    right: 12px;
+    width: calc(100vw - 24px);
+  }
+}
+
+.notif-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-muted) 70%, transparent) transparent;
+}
+
+.notif-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.notif-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notif-scrollbar::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--color-muted) 70%, transparent);
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
+.notif-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--color-muted) 88%, transparent);
+}
+
+/* Sidebar scrollbar styling for dark mode */
+.sidebar .overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148,163,184,0.12) transparent;
+}
+
+.sidebar.is-dark .overflow-y-auto::-webkit-scrollbar {
+  width: 10px;
+}
+.sidebar.is-dark .overflow-y-auto::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.02);
+}
+.sidebar.is-dark .overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(148,163,184,0.12);
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+.sidebar.is-dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148,163,184,0.18);
+}
+
+/* Sidebar scrollbar styling for light mode (fallback) */
+.sidebar:not(.is-dark) .overflow-y-auto::-webkit-scrollbar {
+  width: 10px;
+}
+.sidebar:not(.is-dark) .overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar:not(.is-dark) .overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(15,23,42,0.06);
+  border-radius: 9999px;
+}
+
+
