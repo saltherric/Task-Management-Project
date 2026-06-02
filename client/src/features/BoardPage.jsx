@@ -122,18 +122,12 @@ function BoardPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-        <Navbar />
-
-        <div className="flex">
-          <Sidebar />
-            
-          <Alert alert={alert}/>
-
-          <main className="flex-1 p-6">
-            Content
-          </main>
-        </div>
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Board</h1>
+        <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
+          This page is now only responsible for board content. The shared navbar and sidebar live in
+          the protected layout.
+        </p>
       </div>
 
       {/* <Navbar/>
