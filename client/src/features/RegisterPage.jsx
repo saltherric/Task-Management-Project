@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from "react-router-dom";
-import axios  from 'axios';
 import { Button, Form, Input } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import Alert from '../components/Alert';
-import API from '../api/axios';
+import API from '../services/api';
 
 function Register() {
   const navigate = useNavigate();

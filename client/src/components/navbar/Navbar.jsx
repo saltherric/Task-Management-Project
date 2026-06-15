@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ThemeContext } from '../../context/ThemeContext';
+import { ThemeContext } from '../../contexts/ThemeContext';
 import { SearchBar } from '../navbar/SearchBar';
 import { NotificationDropdown } from '../navbar/NotificationDropdown';
 import { ProfileDropdown } from '../navbar/ProfileDropdown';
@@ -227,7 +227,7 @@ function Navbar() {
                   setShowNotifDropdown(false);
                 }}
               >
-                <div className={`h-9 w-9  rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-semibold text-sm flex items-center justify-center ring-2 group-hover:ring-indigo-100 transition-all duration-200 shadow-sm ${isDark ? 'ring-slate-800 group-hover:ring-indigo-950/60' : 'ring-slate-100'}`}>
+                <div className={`h-9 w-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-semibold text-sm flex items-center justify-center ring-2 group-hover:ring-indigo-100 transition-all duration-200 shadow-sm ${isDark ? 'ring-slate-800 group-hover:ring-indigo-950/60' : 'ring-slate-100'}`}>
                   {profileInitials}
                 </div>
               </button>

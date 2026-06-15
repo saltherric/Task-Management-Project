@@ -18,6 +18,11 @@ const attachmentSchema = new mongoose.Schema(
       required: true,
    },
 
+   size: { 
+      type: Number,
+      required: true,
+   },
+   
    uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

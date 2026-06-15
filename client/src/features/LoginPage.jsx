@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import Alert from '../components/alert';
-import API from '../api/axios';
+import API from '../services/api';
 import { Form, Input, Button, Checkbox } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 

@@ -7,11 +7,11 @@ const readStoredUserInfo = () => {
   }
 };
 
-export const getStoredUserInfo = () => readStoredUserInfo();
+const getStoredUserInfo = () => readStoredUserInfo();
 
-export const getAuthToken = () => readStoredUserInfo()?.token || '';
+const getAuthToken = () => readStoredUserInfo()?.token || '';
 
-export const getAuthHeaders = () => {
+const getAuthHeaders = () => {
   const token = getAuthToken();
   return token
     ? {
@@ -20,10 +20,17 @@ export const getAuthHeaders = () => {
     : {};
 };
 
-export const getAuthState = () => {
+const getAuthState = () => {
   const userInfo = readStoredUserInfo();
   return {
     currentUser: userInfo,
     isAuthenticated: Boolean(userInfo?.token),
   };
 };
+
+export {
+  getStoredUserInfo,
+  getAuthToken,
+  getAuthHeaders,
+  getAuthState
+}

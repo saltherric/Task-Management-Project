@@ -24,8 +24,9 @@ const workspaceMiddleware = async (req, res, next) => {
         });
     }
 
-    const isMember = Array.isArray(existingWorkspace.members) &&
-      existingWorkspace.members.map(m => m.toString()).includes(req.user._id.toString());
+    const isMember = existingWorkspace.members.some(
+        member => member.user.toString() === req.user._id.toString()
+    );
     if (!isMember && req.user.role !== 'admin') {
         return res.status(403).json({ 
             message: 'You are not a member of this workspace' 

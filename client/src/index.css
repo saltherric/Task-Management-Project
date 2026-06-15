@@ -184,6 +184,183 @@ body, html {
   background-color: color-mix(in srgb, var(--color-muted) 88%, transparent);
 }
 
+.rich-text-editor {
+  line-height: 1.7;
+  color: var(--color-text);
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-muted) transparent;
+}
+
+/* Scrollbar */
+
+.rich-text-editor::-webkit-scrollbar {
+  width: 10px;
+}
+
+.rich-text-editor::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in srgb,
+    var(--color-muted) 35%,
+    transparent
+  );
+
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
+/* Typography */
+
+.rich-text-editor p {
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-editor p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-editor h1,
+.rich-text-editor h2 {
+  color: var(--color-text);
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 1rem 0 0.5rem;
+}
+
+.rich-text-editor h1 {
+  font-size: 1.75rem;
+}
+
+.rich-text-editor h2 {
+  font-size: 1.35rem;
+}
+
+/* Lists */
+
+.rich-text-editor ul,
+.rich-text-editor ol {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+  padding-left: 1rem;
+}
+
+.rich-text-editor ul {
+  list-style: disc;
+}
+
+.rich-text-editor ol {
+  list-style: decimal;
+}
+
+.rich-text-editor li {
+  margin: 0.25rem 0;
+}
+
+/* Task Lists */
+
+.rich-text-editor ul[data-type="taskList"] {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.rich-text-editor ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.rich-text-editor ul[data-type="taskList"] label {
+  display: inline-flex;
+  padding-top: 0.15rem;
+}
+
+.rich-text-editor ul[data-type="taskList"] input {
+  accent-color: var(--color-primary);
+}
+
+.rich-text-editor ul[data-type="taskList"] div {
+  flex: 1;
+}
+
+/* Links */
+
+.rich-text-editor a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rich-text-editor a:hover {
+  opacity: 0.85;
+}
+
+/* Highlight */
+
+.rich-text-editor mark {
+  background: var(--editor-highlight);
+  color: inherit;
+  border-radius: 4px;
+  padding: 0.05rem 0.2rem;
+}
+
+/* Inline Code */
+
+.rich-text-editor code {
+  background: var(--editor-code-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.9em;
+  padding: 0.15rem 0.35rem;
+}
+
+/* Code Block */
+
+.rich-text-editor pre {
+  background: var(--editor-code-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text);
+
+  margin: 0.75rem 0;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.rich-text-editor pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* Images */
+
+.rich-text-editor img {
+  display: block;
+
+  max-width: 100%;
+  max-height: 320px;
+
+  object-fit: contain;
+
+  margin: 0.75rem 0;
+  border-radius: 10px;
+}
+
+/* Placeholder */
+
+.rich-text-editor .is-empty::before {
+  content: attr(data-placeholder);
+
+  color: var(--color-muted);
+
+  float: left;
+  height: 0;
+
+  pointer-events: none;
+}
+
 /* Sidebar scrollbar styling for dark mode */
 .sidebar .overflow-y-auto {
   scrollbar-width: thin;

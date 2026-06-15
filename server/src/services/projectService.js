@@ -1,7 +1,17 @@
 const Project = require ("../models/Project");
 const Column = require ("../models/Column");
+const Workspace = require ("../models/Workspace");
 
 const createProject = async ({ projectData, user}) => {
+    const workspace = await Workspace.findOne({
+        _id: projectData.workspace,
+        "members.user": user._id,
+    });
+
+    if (!workspace) {
+        throw new Error("Workspace not found or access denied");
+    }
+
     const project = await Project.create({
         workspace: projectData.workspace,
         name: projectData.name,
@@ -10,7 +20,7 @@ const createProject = async ({ projectData, user}) => {
         visibility: projectData.visibility,
         sprintEndDate: projectData.sprintEndDate
     });
-
+    
     //defaul column
     const defaultColumns = [
         {
@@ -38,4 +48,23 @@ const createProject = async ({ projectData, user}) => {
     return project;
 }
 
-module.exports = { createProject };
+const getProjects = async ({workspaceId, user}) => {
+    const workspace = await Workspace.findOne({
+        _id: workspaceId,
+        "members.user": user._id,
+    });
+
+    if (!workspace) {
+        throw new Error("Workspace not found or access denied");
+    }
+
+    const projects = await Project.find({
+        workspace: workspaceId,
+        isArchived: false,
+    })
+        .populate("createdBy", "username email")
+        .sort({ createdAt: -1 });
+
+    return projects;
+};
+module.exports = { createProject, getProjects };

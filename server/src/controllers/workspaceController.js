@@ -1,4 +1,4 @@
-const { createWorkspace: createWorkspaceService } = require("../services/workspaceService");
+const { createWorkspace: createWorkspaceService, getWorkspaces: getWorkspacesService } = require("../services/workspaceService");
 
 const createWorkspace = async (req, res, next) => {
     try {
@@ -15,4 +15,17 @@ const createWorkspace = async (req, res, next) => {
     };
 }
 
-module.exports = { createWorkspace };
+const getWorkspaces = async (req, res, next) => {
+    try {
+        const workspaces = await getWorkspacesService({
+            user: req.user,
+        });
+        res.status(200).json({
+            success: true,
+            workspaces,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+module.exports = { createWorkspace, getWorkspaces };

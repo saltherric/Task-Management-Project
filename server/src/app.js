@@ -7,6 +7,9 @@ const taskRoutes = require("./routes/taskRoutes");
 const userRoutes = require("./routes/authRoutes");
 const workspaceRoutes = require("./routes/workspaceRoutes");
 const projectRoutes = require("./routes/projectRoutes");
+const columnRoutes = require("./routes/columnRoutes");
+const attachmentRoutes = require("./routes/attachmentRoutes");
+const commentRoutes = require("./routes/commentRoutes");
 
 const app = express();
 
@@ -16,6 +19,9 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/projects", projectRoutes);
+app.use("/api/columns", columnRoutes);
+app.use("/api/attachments", attachmentRoutes);
+app.use("/api/comments", commentRoutes);
 
 // error middlware
 app.use(errorMiddleware);

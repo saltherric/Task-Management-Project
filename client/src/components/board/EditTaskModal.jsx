@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { getAuthHeaders } from '../helpers/auth';
+import { getAuthHeaders } from '../../helpers/auth';
 
 // Bootstrap modal for editing task
 

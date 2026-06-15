@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import axios from "axios";
-import { getAuthHeaders, getStoredUserInfo } from '../helpers/auth';
+import { getAuthHeaders, getStoredUserInfo } from '../../helpers/auth';
 
 // modal for adding new task
 

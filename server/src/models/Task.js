@@ -49,6 +49,11 @@ const taskSchema = new mongoose.Schema(
       default: 'todo',
    },
 
+   commentCount: {
+      type: Number,
+      default: 0,
+   },
+
    priority: {
       type: String,
       enum: [

@@ -1,4 +1,6 @@
-const { createProject: createProjectService } = require("../services/projectService");
+const { response } = require("express");
+const Workspace = require("../models/Workspace");
+const { createProject: createProjectService, getProjects: getProjectsService} = require("../services/projectService");
 
 const createProject = async (req, res, next) => {
   try {
@@ -15,4 +17,19 @@ const createProject = async (req, res, next) => {
   }
 }
 
-module.exports = { createProject };
+const getProjects = async (req, res, next) => {
+  try {
+    const projects = await getProjectsService({
+      workspaceId: req.params.workspaceId,
+      user: req.user,
+    })
+    res.status(200).json({
+      success: true,
+      projects,
+    })
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { createProject, getProjects};

@@ -1,159 +1,192 @@
-import React, { useEffect, useState } from 'react'
-import TaskColumn from '../components/TaskColumn'
-import AddTaskModal from '../components/AddTaskModal'
-import { DragDropContext } from '@hello-pangea/dnd';
-import Alert from '../components/alert';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import EditTaskModal from '../components/EditTaskModal';
-import Navbar from '../components/navbar/Navbar';
-import { getAuthHeaders, getStoredUserInfo } from '../helpers/auth';
-import API from '../api/axios';
-import Sidebar from '../components/Sidebar';
+// import React, { useEffect, useState } from 'react'
+// import TaskColumn from '../components/board/TaskColumn'
+// import AddTaskModal from '../components/board/AddTaskModal'
+// import { DragDropContext } from '@hello-pangea/dnd';
+// import Alert from '../components/alert';
+// import { useNavigate } from 'react-router-dom';
+// import axios from 'axios';
+// import EditTaskModal from '../components/board/EditTaskModal';
+// import Navbar from '../components/navbar/Navbar';
+// import { getAuthHeaders, getStoredUserInfo } from '../helpers/auth';
+// import API from '../services/api';
+// import getTasksByProject from '../services/taskApi';
+// import { useParams } from "react-router-dom";
+// import BoardHeader from "../components/board/BoardHeader";
+// import KanbanBoard from "../components/board/Board";
 
-// Main page
+// // Main page
 
-function BoardPage() {
-  const [alert, setAlert] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [selectedTask, setSelectedTask] = useState(null);
+// function BoardPage() {
+//   const [alert, setAlert] = useState(null);
+//   const [project, setProject] = useState(null);
+//   const [columns, setColumns] = useState([]);
+//   const [tasks, setTasks] = useState([]);
+//   // const [selectedTask, setSelectedTask] = useState(null);
 
-  const navigate = useNavigate();
+//   const navigate = useNavigate();
+//   const { projectId } = useParams();
 
-  useEffect(() => {
-      fetchTasks();
-  }, []);
+//   useEffect(() => {
+//     if(projectId){
+//       fetchProject();
+//       fetchColumns();
+//       fetchTasks();
+//     }
+//    }, [projectId]);
 
-  // Check for pending alert from previous page (Login)
-  useEffect(() => {
-    const pendingAlert = localStorage.getItem('pendingAlert');
-    if (pendingAlert) {
-      setAlert(JSON.parse(pendingAlert));
-      localStorage.removeItem('pendingAlert');
-    }
-  }, []);
+//   const fetchProject = async(projectId) => {
+//     try{
+//       const response = await API.get(
+//         `/projects/${projectId}`,
+//         {
+//             headers: getAuthHeaders(),
+//         }
+//       );
+//       setProject(response.data.project);
+//     }catch(error){
+//       console.error(error);
+//     }
+//   }
 
-  const fetchTasks = async () => {
-    try {
-      const userInfo = getStoredUserInfo();
+//   const fetchTasks = async (projectId) => {
+//     try {
+//       const userInfo = getStoredUserInfo();
 
-      if (!userInfo?.token) {
-        navigate('/login');
-        return;
-      }
+//       if (!userInfo?.token) {
+//         navigate('/login');
+//         return;
+//       }
 
-      const response = await API.get('/tasks', {
-        headers: getAuthHeaders(),  
-      });
-      setTasks(response.data);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+//       const data = await getTasksByProject(projectId);
+//       const taskList = data.tasks;
+//       setTasks(taskList);
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
 
-  useEffect(() => {
-    if (!alert) return;
+//   const fetchColumns = async (projectId) => {
+//     try {
 
-    const timerId = setTimeout(() => {
-      setAlert(null);
-    }, 2500); 
+//         const response = await API.get(
+//           `/columns/projects/${projectId}`,
+//           {
+//               headers: getAuthHeaders(),
+//           }
+//         );
 
-    return () => clearTimeout(timerId);
-  }, [alert]);
+//         setColumns(response.data.columns);
 
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-  };
+//     } catch (error) {
+//         console.error(error);
+//     }
+//   };
 
-  const modalId = "editTaskModal";
+//   // Check for pending alert from previous page (Login)
+//   useEffect(() => {
+//     const pendingAlert = localStorage.getItem('pendingAlert');
+//     if (pendingAlert) {
+//       setAlert(JSON.parse(pendingAlert));
+//       localStorage.removeItem('pendingAlert');
+//     }
+//   }, []);
 
-  const handleAddTask = () => {
-  fetchTasks();
-    showAlert('success', 'Task created successfully.');
-  };
+//   useEffect(() => {
+//     if (!alert) return;
 
-  const handleUpdateTask = () => {
-  fetchTasks();
-    showAlert('info', 'Task updated successfully.');
-  };
+//     const timerId = setTimeout(() => {
+//       setAlert(null);
+//     }, 2500); 
 
-  const handleDeleteTask = () => {
-    fetchTasks();
-    showAlert('danger', `Task deleted successfully.`);
-  };
+//     return () => clearTimeout(timerId);
+//   }, [alert]);
 
-  const handleOpenEditModal = (task) => {
-    setSelectedTask(task);
-  }
+//   const showAlert = (type, message) => {
+//     setAlert({ type, message });
+//   };
 
-  const handleDragEnd = async (result) => {
-    if (!result.destination) return;
+//   const modalId = "editTaskModal";
+
+//   const handleAddTask = () => {
+//   fetchTasks(projectId);
+//     showAlert('success', 'Task created successfully.');
+//   };
+
+//   const handleUpdateTask = () => {
+//   fetchTasks(projectId);
+//     showAlert('info', 'Task updated successfully.');
+//   };
+
+//   const handleDeleteTask = () => {
+//     fetchTasks(projectId);
+//     showAlert('danger', `Task deleted successfully.`);
+//   };
+
+//   const handleOpenEditModal = (task) => {
+//     setSelectedTask(task);
+//   }
+
+//   const handleDragEnd = async (result) => {
+//     if (!result.destination) return;
     
-    const taskId = result.draggableId;
-    const newStatus = result.destination.droppableId;
+//     const taskId = result.draggableId;
+//     const newStatus = result.destination.droppableId;
     
-    setTasks(prevTasks => {
-      const updatedTasks = prevTasks.map(task =>
-        task._id === taskId ? { ...task, status: newStatus } : task
-      );
-      // Move the updated task to the end
-      const movedTask = updatedTasks.find(task => task._id === taskId);
-      const otherTasks = updatedTasks.filter(task => task._id !== taskId);
-      return [...otherTasks, movedTask];
-    });
-    
-    try {
-      await API.put(`/tasks/${taskId}`,
-        { status: newStatus },
-        {
-          headers: getAuthHeaders(),
-        }
-      );
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      fetchTasks();
-    }
-  }
+//     setTasks(prevTasks => {
+//       const updatedTasks = prevTasks.map(task =>
+//         task._id === taskId ? { ...task, status: newStatus } : task
+//       );
+//       // Move the updated task to the end
+//     //   const movedTask = updatedTasks.find(task => task._id === taskId);
+//     //   const otherTasks = updatedTasks.filter(task => task._id !== taskId);
+//     //   return [...otherTasks, movedTask];
+//     });
+//   }
+//   const handleLogout = () => {
+//     localStorage.removeItem("userInfo");
+//     navigate("/login");
+//   }
 
-  const handleLogout = () => {
-    localStorage.removeItem("userInfo");
-    navigate("/login");
-  }
+//   return (
+//     <>
+//       <div className="p-6">
+//         <BoardHeader
+//             project={project}
+//         />
+//         <Board
+//             columns={columns}
+//             tasks={tasks}
+//         />
+//       </div>
 
-  return (
-    <>
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Board</h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
-          This page is now only responsible for board content. The shared navbar and sidebar live in
-          the protected layout.
-        </p>
-      </div>
+//       {/* <DragDropContext onDragEnd={handleDragEnd}>
+//         <div className="task-board">
+//             <KanbanBoard
+//               columns={columns}
+//               tasks={tasks}
+//               updateTask={handleUpdateTask}
+//               deleteTask={handleDeleteTask}
+//               openEditModal={handleOpenEditModal}
+//               modalId={modalId}
+//             />
+//         </div>
+//       </DragDropContext> */}
 
-      {/* <Navbar/>
-      <Sidebar/>
-      <Alert alert={alert}/> */}
-      {/* <div className="task-page-container">
+//         {/* <TaskColumn /> */}
+
+//       {/* <Alert alert={alert}/> 
+//       <div className="task-page-container">
         
-        <div className="d-flex justify-content-end mb-4">
-          <button type="button" className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal"> 
-            Add New Task
-          </button>
-        </div>
-    
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="task-board">
-              <TaskColumn title="Pending" tasks={pendingTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
-              <TaskColumn title="In Progress" tasks={progressTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
-              <TaskColumn title="Completed" tasks={completedTasks} updateTask={handleUpdateTask} deleteTask={handleDeleteTask} openEditModal={handleOpenEditModal} modalId={modalId}/>
-          </div>
-          
-        </DragDropContext>
-        <AddTaskModal addTask={handleAddTask}/>
-        <EditTaskModal task={selectedTask} updateTask={handleUpdateTask} modalId={modalId}/>
-      </div> */}
-    </>
-  )
+//         <div className="d-flex justify-content-end mb-4">
+//           <button type="button" className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal"> 
+//             Add New Task
+//           </button>
+//         </div>
+//         <AddTaskModal addTask={handleAddTask}/>
+//         <EditTaskModal task={selectedTask} updateTask={handleUpdateTask} modalId={modalId}/>
+//       </div> */}
+//     </>
+//   )
   
-}
-export default BoardPage
+// }
+// export default BoardPage

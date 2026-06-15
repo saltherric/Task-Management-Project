@@ -13,7 +13,7 @@ function ProfileDropdown({
       }`}
     >
       <div
-        className={`flex items-center gap-3 border-b px-3 py-3 ${
+        className={`flex items-center gap-3 border-b px-3 py-2 ${
           isDark ? "border-slate-900" : "border-slate-100"
         }`}
       >
