@@ -5,6 +5,13 @@ import { SearchBar } from '../navbar/SearchBar';
 import { NotificationDropdown } from '../navbar/NotificationDropdown';
 import { ProfileDropdown } from '../navbar/ProfileDropdown';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import {
+  getNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+  deleteNotification,
+} from '../../services/notificationService';
+import { connectTelegram } from '../../services/telegramApi';
 
 function Navbar() {
   const { theme, toggleTheme } = useContext(ThemeContext);
@@ -14,6 +21,7 @@ function Navbar() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [isConnectingTelegram, setIsConnectingTelegram] = useState(false);
 
   // Refs for click-outside detection
   const notifRef = useRef(null);
@@ -33,12 +41,7 @@ function Navbar() {
     }
   });
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: "New task assigned: 'Database migration'", time: "5m ago", read: false, type: 'task' },
-    { id: 2, text: "Sarah commented on your task 'Design feedback'", time: "1h ago", read: false, type: 'comment' },
-    { id: 3, text: "Project 'TaskMe Redesign' deadline updated", time: "3h ago", read: false, type: 'deadline' },
-    { id: 4, text: "Security credentials rotated successfully", time: "1d ago", read: true, type: 'security' }
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   const [tasks] = useState([
     { id: 1, title: "Implement dark mode support", category: "UI/UX", status: "In Progress", priority: "High" },
@@ -63,6 +66,58 @@ function Navbar() {
     () => setIsSearchFocused(false)
   );
 
+  const formatRelativeTime = (dateValue) => {
+    if (!dateValue) {
+      return 'Just now';
+    }
+
+    const date = new Date(dateValue);
+    const diffInMinutes = Math.floor((Date.now() - date.getTime()) / 60000);
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  const loadNotifications = async () => {
+    try {
+      const response = await getNotifications(20);
+      const normalizedNotifications = (response.notifications || []).map((notification) => ({
+        id: notification._id,
+        text: notification.message || notification.title,
+        time: formatRelativeTime(notification.createdAt),
+        read: Boolean(notification.isRead),
+        type: notification.type,
+        actionUrl: notification.actionUrl,
+      }));
+
+      setNotifications(normalizedNotifications);
+    } catch (error) {
+      console.error('Failed to load notifications', error);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+
+    const intervalId = window.setInterval(() => {
+      loadNotifications();
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    if (showNotifDropdown) {
+      loadNotifications();
+    }
+  }, [showNotifDropdown]);
+
   // Filter tasks based on search query in the navbar
   const filteredTasks = tasks.filter(task =>
     task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -71,19 +126,71 @@ function Navbar() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications((currentNotifications) =>
+        currentNotifications.map((notification) => ({
+          ...notification,
+          read: true,
+        }))
+      );
+    } catch (error) {
+      console.error('Failed to mark notifications as read', error);
+    }
   };
 
-  const removeNotification = (id, e) => {
+  const removeNotification = async (id, e) => {
     e.stopPropagation();
-    setNotifications(notifications.filter(n => n.id !== id));
+    try {
+      await deleteNotification(id);
+      setNotifications((currentNotifications) =>
+        currentNotifications.filter((notification) => notification.id !== id)
+      );
+    } catch (error) {
+      console.error('Failed to remove notification', error);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification.read) {
+      try {
+        await markNotificationAsRead(notification.id);
+        setNotifications((currentNotifications) =>
+          currentNotifications.map((item) =>
+            item.id === notification.id ? { ...item, read: true } : item
+          )
+        );
+      } catch (error) {
+        console.error('Failed to mark notification as read', error);
+      }
+    }
+
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+      setShowNotifDropdown(false);
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("userInfo");
     setCurrentUser({ name: 'Guest', email: '' });
     navigate('/login');
+  };
+
+  const handleConnectTelegram = async () => {
+    try {
+      setIsConnectingTelegram(true);
+      const response = await connectTelegram();
+
+      if (response?.url) {
+        window.open(response.url, '_blank', 'noopener,noreferrer');
+      }
+    } catch (error) {
+      console.error('Failed to create Telegram connection link', error);
+    } finally {
+      setIsConnectingTelegram(false);
+    }
   };
 
   const profileInitials = (currentUser?.name || 'G')
@@ -105,22 +212,43 @@ function Navbar() {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'task':
+      case 'TASK_ASSIGNED':
+      case 'TASK_UNASSIGNED':
+      case 'TASK_UPDATED':
+      case 'TASK_MOVED':
+      case 'TASK_COMPLETED':
+      case 'TASK_DELETED':
+      case 'PROJECT_ADDED':
+      case 'PROJECT_REMOVED':
         return (
           <div className={`p-1.5 rounded-lg ${isDark ? 'bg-emerald-950/50 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
           </div>
         );
-      case 'comment':
+      case 'COMMENT_ADDED':
+      case 'COMMENT_REPLY':
+      case 'MENTION':
         return (
           <div className={`p-1.5 rounded-lg ${isDark ? 'bg-indigo-950/50 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
           </div>
         );
-      case 'deadline':
+      case 'TASK_DUE_SOON':
+      case 'TASK_OVERDUE':
         return (
           <div className={`p-1.5 rounded-lg ${isDark ? 'bg-amber-950/50 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+        );
+      case 'WORKSPACE_INVITE':
+      case 'WORKSPACE_JOINED':
+      case 'WORKSPACE_ROLE_CHANGED':
+      case 'ATTACHMENT_ADDED':
+      case 'TAG_ADDED':
+      case 'INVITE_ACCEPTED':
+        return (
+          <div className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-900/50 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </div>
         );
       default:
@@ -214,6 +342,7 @@ function Navbar() {
                   markAllAsRead={markAllAsRead}
                   removeNotification={removeNotification}
                   getNotificationIcon={getNotificationIcon}
+                  onNotificationClick={handleNotificationClick}
                 />
               )}
             </div>
@@ -238,6 +367,8 @@ function Navbar() {
                   currentUser={currentUser}
                   profileInitials={profileInitials}
                   isDark={isDark}
+                  handleConnectTelegram={handleConnectTelegram}
+                  isConnectingTelegram={isConnectingTelegram}
                   handleLogout={handleLogout}
                 />
               )}

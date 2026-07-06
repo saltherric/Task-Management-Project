@@ -5,4 +5,12 @@ const getProjects = async (workspaceId) => {
     return response.data;
 }
 
-export default getProjects;
+const createProject = async (projectData) => {
+    const response = await API.post("/projects", projectData);
+    return response.data;
+}
+
+export {
+    getProjects,
+    createProject
+}

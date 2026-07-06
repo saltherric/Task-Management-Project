@@ -25,4 +25,50 @@ const getWorkspaces = async ( {user} ) => {
     return workspaces;
 }
 
-module.exports = { createWorkspace, getWorkspaces};
+const addWorkspaceTag = async ({
+  workspaceId,
+  tagName,
+}) => {
+  const workspace =
+    await Workspace.findById(workspaceId);
+
+  if (!workspace) {
+    throw new Error("Workspace not found");
+  }
+
+  const normalizedTag = tagName.trim();
+
+  if (!normalizedTag) {
+    throw new Error("Tag name is required");
+  }
+
+  const exists =
+    workspace.availableTags.some(
+      tag =>
+        tag.toLowerCase() ===
+        normalizedTag.toLowerCase()
+    );
+
+  if (!exists) {
+    workspace.availableTags.push(
+      normalizedTag
+    );
+
+    await workspace.save();
+  }
+
+  return workspace.availableTags;
+};
+
+const getWorkspaceTags = async (
+  workspaceId
+) => {
+  const workspace =
+    await Workspace.findById(
+      workspaceId
+    ).select("availableTags");
+
+  return workspace.tags;
+};
+
+module.exports = { createWorkspace, getWorkspaces, addWorkspaceTag, getWorkspaceTags};

@@ -7,6 +7,7 @@ function NotificationDropdown({
     markAllAsRead,
     removeNotification,
     getNotificationIcon,
+    onNotificationClick,
 }) {
   return (
     <div
@@ -41,7 +42,7 @@ function NotificationDropdown({
                 Mark all as read
             </button>
             )}
-        </div>
+                </div>
 
         <div className="notif-scrollbar max-h-80 overflow-y-auto mt-1.5 space-y-1">
             {notifications.length === 0 ? (
@@ -62,11 +63,16 @@ function NotificationDropdown({
                         : "hover:bg-slate-50"
                     }`}
                 >
-                <div className="mt-0.5">
-                    {getNotificationIcon(notif.type)}
-                </div>
+                <button
+                    type="button"
+                    className="flex flex-1 items-start gap-3 text-left"
+                    onClick={() => onNotificationClick?.(notif)}
+                >
+                    <div className="mt-0.5">
+                        {getNotificationIcon(notif.type)}
+                    </div>
 
-                <div className="flex-1">
+                    <div className="flex-1">
                     <p className={`text-xs leading-normal ${
                         notif.read
                         ? isDark
@@ -89,7 +95,8 @@ function NotificationDropdown({
                     >
                     {notif.time}
                     </span>
-                </div>
+                    </div>
+                </button>
 
                 <button
                     onClick={(e) =>

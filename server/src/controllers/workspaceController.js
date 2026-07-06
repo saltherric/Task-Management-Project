@@ -1,5 +1,5 @@
-const { createWorkspace: createWorkspaceService, getWorkspaces: getWorkspacesService } = require("../services/workspaceService");
-
+const { createWorkspace: createWorkspaceService, getWorkspaces: getWorkspacesService, getWorkspaceTags: getWorkspaceTagsService, addWorkspaceTag: addWorkspaceTagService  } = require("../services/workspaceService");
+const { getWorkspaceMembers: getWorkspaceMembersService, getAvailableMembers: getAvailableMembersService, invitesMember: invitesMemberService, updateMemberRole: updateMemberRoleService} = require("../services/InvitedService");
 const createWorkspace = async (req, res, next) => {
     try {
         const workspace = await createWorkspaceService({
@@ -28,4 +28,101 @@ const getWorkspaces = async (req, res, next) => {
         next(error);
     }
 }
-module.exports = { createWorkspace, getWorkspaces };
+
+const getTags = async (req, res, next) => {
+    try {
+        const tags = await getWorkspaceTagsService(
+            req.params.workspaceId
+        );
+        res.status(200).json({
+            success: true,
+            tags,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const createTag = async (req, res, next) => {
+    try {
+        const tag = await addWorkspaceTagService({
+            workspaceId: req.params.workspaceId,
+            tagName: req.body.tagName,
+        });
+        res.status(201).json({
+            success: true,
+            tag
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getWorkspaceMembers = async (req, res, next) => {
+    try {
+        const members = await getWorkspaceMembersService({
+            workspaceId: req.params.workspaceId,
+        });
+        res.status(200).json({
+            success: true,
+            members,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+const getAvailableMembers = async (req, res, next) => {
+    try {
+        const availableMembers = await getAvailableMembersService({
+            workspaceId: req.params.workspaceId
+        });
+        res.status(200).json({
+            success: true,
+            availableMembers,
+        })
+    } catch (error) {
+        next(error);
+    }
+}
+
+const invitesMember = async (req, res, next) => {
+    try {
+        const member = await invitesMemberService({
+            workspaceId: req.params.workspaceId,
+            userId: req.body.userId,
+        })
+        res.status(201).json({
+            success: true,
+            member,
+        })
+    } catch (error) {
+        next(error);
+    }
+}
+
+const updateMemberRole = async (req, res, next) => {
+    try {
+        const roles = await updateMemberRoleService({
+            workspaceId: req.params.workspaceId,
+            memberId: req.params.memberId,
+            role: req.body.role,
+        })
+        res.status(200).json({
+            success: true,
+            roles,
+        })
+    } catch (error) {
+        next(error);
+    }
+}
+module.exports = { 
+    createWorkspace, 
+    getWorkspaces, 
+    getTags, 
+    createTag, 
+    getWorkspaceMembers, 
+    getAvailableMembers, 
+    invitesMember, 
+    updateMemberRole
+};

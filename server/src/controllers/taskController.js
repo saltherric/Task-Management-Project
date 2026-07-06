@@ -2,7 +2,8 @@ const Task = require("../models/Task");
 const Project = require("../models/Project"); 
 const Column = require("../models/Column");
 const taskService = require("../services/taskService");
-const { getTasks: getTasksService, updateTask: updateTaskService } = require("../services/taskService");
+const { getTasks: getTasksService, updateTask: updateTaskService, deleteTask: deleteTaskService, moveTask: moveTaskService } = require("../services/taskService");
+
 
 const createTask = async (req, res, next) => {
     try {
@@ -12,6 +13,7 @@ const createTask = async (req, res, next) => {
             column: req.column,
             project: req.project,
         });
+
         res.status(201).json(task);
     } catch(error) {
         next(error)
@@ -33,7 +35,7 @@ const getTasks = async (req, res, next) => {
     }
 };
 
-const getTaskById = async (req, res) => {
+const getTaskById = async (req, res, next) => {
     try {
         const task = await Task.findById(req.params.id);
         if (!task) {
@@ -43,9 +45,7 @@ const getTaskById = async (req, res) => {
         }
         res.status(200).json(task);
     } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        next(error);
     }
 }
 
@@ -56,6 +56,7 @@ const updateTask = async (req, res, next) => {
             taskData: req.body,
             user: req.user
         });
+
         res.status(200).json({
             success: true,
             task
@@ -65,37 +66,34 @@ const updateTask = async (req, res, next) => {
     }
 }
 
-const deleteTask = async (req, res) => {
+const deleteTask = async (req, res, next) => {
   try {
-    let task;
-    if (req.user.role === 'admin') {
-      task = await Task.findByIdAndDelete(req.params.id);
-    } else {
-      task = await Task.findOneAndDelete({ _id: req.params.id, createdBy: req.user._id });
-    }
-    if (!task) return res.status(404).json({ message: 'Task not found or Unauthorized!' });
-    res.status(200).json(task);
+    const task = await deleteTaskService({
+        taskId: req.params.taskId,
+        user: req.user
+    });
+
+    res.status(200).json({
+        success: true,
+        task
+    })
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error)
   }
 };
 
 const moveTask = async (req, res, next) => {
   try {
-    const { taskId } = req.params;
-    const { columnId } = req.body;
-
-    const task = await Task.findById(taskId);
-
-    task.column = columnId;
-
-    await task.save();
+    const task = await moveTaskService({
+        taskId: req.params.taskId,
+        columnId: req.body.columnId,
+        user: req.user
+    })
 
     res.status(200).json({
       success: true,
       task
     });
-
   } catch (error) {
     next(error);
   }

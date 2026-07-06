@@ -25,12 +25,6 @@ const taskSchema = new mongoose.Schema(
       default: '',
    },
 
-   createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-   },
-
    assignedTo: [
       {
          type: mongoose.Schema.Types.ObjectId,
@@ -50,6 +44,11 @@ const taskSchema = new mongoose.Schema(
    },
 
    commentCount: {
+      type: Number,
+      default: 0,
+   },
+
+   attachmentCount: {
       type: Number,
       default: 0,
    },
@@ -77,12 +76,13 @@ const taskSchema = new mongoose.Schema(
    tags: [
       {
          type: String,
+         trim: true,
       },
    ],
 
    position: {
       type: Number,
-      required: true,
+      // required: true,
    },
 
    completedAt: {
@@ -93,6 +93,23 @@ const taskSchema = new mongoose.Schema(
    isArchived: {
       type: Boolean,
       default: false,
+   },
+
+   archivedAt: {
+      type: Date,
+      default: null
+   },
+
+   archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+   },
+
+   createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
    },
 },
 {

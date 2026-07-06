@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Workspace = require('../src/models/Workspace');
+const Workspace = require('../models/Workspace');
 
 const workspaceMiddleware = async (req, res, next) => {
   try {

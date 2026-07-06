@@ -6,6 +6,9 @@ export default function TaskAssignedTo({ task, onTaskUpdate }) {
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
+  const getUserKey = (user, index) =>
+    user?._id || user?.id || user?.username || `user-${index}`;
+
   useEffect(() => {
     if (!task?._id) return;
 
@@ -41,11 +44,10 @@ export default function TaskAssignedTo({ task, onTaskUpdate }) {
       let response;
 
       if (isAssigned) {
-        response =
-          await removeAssign(
-            task._id,
-            selectedUser._id
-          );
+        response = await removeAssign(
+          task._id,
+          selectedUser._id
+        );
       } else {
         response =
           await assignUser(
@@ -79,32 +81,32 @@ export default function TaskAssignedTo({ task, onTaskUpdate }) {
 
             {activeDropdown === 'assignee' && (
                 <div className="absolute right-0 mt-2 w-48 bg-[#14161C] border border-[#272B35] shadow-2xl rounded-2xl p-1.5 z-30">
-                <p className="text-[10px] text-neutral-500 px-2 py-1 border-b border-[#242835] mb-1">Select Assignees</p>
-                {workspaceMembers.map((user) => {
-                    const isAssigned = (task.assignedTo || []).some(u => u._id === user._id);
-                    return (
-                    <button
-                        key={user._id}
-                        onClick={() => toggleAssignee(user)}
-                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-xl text-xs hover:bg-[#1E212A] text-left transition-colors ${isAssigned ? 'bg-indigo-500/10 text-indigo-300' : 'text-neutral-300'}`}
-                    >
-                        <div className="flex items-center gap-2">
-                        <img src={user.avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
-                        <span>{user.username}</span>
-                        </div>
-                        {isAssigned && <CheckCircle className="w-3.5 h-3.5 text-indigo-400" />}
-                    </button>
-                    );
-                })}
+                  <p className="text-[10px] text-neutral-500 px-2 py-1 border-b border-[#242835] mb-1">Select Assignees</p>
+                  {workspaceMembers.map((user, index) => {
+                      const isAssigned = (task.assignedTo || []).some(u => u._id === user._id);
+                      return (
+                        <button
+                          key={getUserKey(user, index)}
+                          onClick={() => toggleAssignee(user)}
+                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-xl text-xs hover:bg-[#1E212A] text-left transition-colors ${isAssigned ? 'bg-indigo-500/10 text-indigo-300' : 'text-neutral-300'}`}
+                        >
+                          <div className="flex items-center gap-2">
+                          <img src={user.avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          <span>{user.username}</span>
+                          </div>
+                          {isAssigned && <CheckCircle className="w-3.5 h-3.5 text-indigo-400" />}
+                        </button>
+                      );
+                    })}
                 </div>
             )}
             </div>
         </div>
 
         <div className="space-y-1.5">
-            {(task.assignedTo || []).map((user) => (
+            {(task.assignedTo || []).map((user, index) => (
             <div 
-                key={user._id} 
+                key={getUserKey(user, index)}
                 className="flex items-center justify-between bg-[#111215] border border-[#1C1F26] p-2 rounded-xl group hover:border-indigo-500/30 transition-all"
             >
                 <div className="flex items-center gap-2">

@@ -62,8 +62,7 @@ export default function TaskHeader({ task, updateField }) {
     const value = tempTitle.trim();
 
     if (
-      value &&
-      value !== task.title
+      value && value !== task.title
     ) {
       updateField("title", value);
     }
@@ -341,7 +340,7 @@ export default function TaskHeader({ task, updateField }) {
           </span>
 
           <span className="ml-2 text-xs text-indigo-400 font-bold uppercase">
-            Task Management System
+            {task.project.name}
           </span>
         </div>
 

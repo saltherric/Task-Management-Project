@@ -5,9 +5,12 @@ import './themes/theme.css'
 import '@fortawesome/fontawesome-free/css/all.min.css';
 // import 'antd/dist/reset.css'
 import ThemeProvider from './contexts/ThemeContext.jsx'
+import { SocketProvider } from "./contexts/SocketContext";
 
 createRoot(document.getElementById('root')).render(
   <ThemeProvider>
-    <App />
+    <SocketProvider>
+      <App />
+    </SocketProvider>
   </ThemeProvider>,
 )

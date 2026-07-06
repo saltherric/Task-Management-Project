@@ -1,120 +1,75 @@
-import React, { useState, useRef } from 'react'
-import axios from "axios";
-import { getAuthHeaders, getStoredUserInfo } from '../../helpers/auth';
+import React, { useState } from 'react'
 
-// modal for adding new task
-
-function AddTaskModal({addTask}) {
-  const closeButton = useRef(null);
+export default function AddTaskModal({isOpen, onClose, onCreate}) {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    priority: 'Low',
-    status: 'Pending'
+    title: "",
   });
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      priority: 'Low',
-      status: 'Pending'
-    });
-  }
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const userInfo = getStoredUserInfo();
-
-    if (!userInfo?.token) {
-      console.error('Missing auth token while creating task.');
-      return;
-    }
-
-    try {
-      const response = await axios.post("http://localhost:5000/api/tasks", 
-        formData,
-        {
-          headers: getAuthHeaders(),
-        }
-      );
-
-      // Inform parent of new task if callback provided
-      if (addTask && response && response.data) {
-        addTask(response.data);
-      }
-
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        priority: 'Low',
-        status: 'Pending'
-      });
-
-      closeButton.current.click();
-    } catch (err) {
-      console.error('Error creating task:', err);
-    }
+    onCreate(formData);
+    setFormData({
+      title: "",
+    });
+    onClose();
   };
-  
+
+  if (!isOpen) return null;
+
   return (
-    <>
-    <div className="modal fade" id="addTaskModal" tabIndex={-1} data-bs-backdrop = "static" data-bs-keyboard="false">
-      <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">Add New Task</h5>
-            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" ref={closeButton}></button>
-          </div>
-          
-          <div className="modal-body">
-            <form className="row g-3" onSubmit={handleSubmit}>
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+      <div className='w-full max-w-md rounded-2xl bg-slate-900 border-slate-700 shadow-2xl'>
+        <div className='flex items-center justify-between p-5 border-slate-800'>
+          <h2 className='text-white font-semibold'>
+            Create Task
+          </h2>
 
-              <div className="col-12">
-                <label className="form-label">Title<span className='text text-danger'>*</span></label>
-                <input type="text" className="form-control" name='title' value={formData.title}  onChange={handleChange}
-                  required 
-                />
-              </div>
-              <div className="col-12">
-                <label className="form-label">Description</label>
-                <textarea className="form-control" name='description' value={formData.description} onChange={handleChange}></textarea>
-              </div>
-              <div className="col-12">
-                <label className="form-label">Priority</label>
-                <select className="form-select" name='priority' value={formData.priority} onChange={handleChange}>
-                  <option>Low</option>
-                  <option>Medium</option>
-                  <option>High</option>
-                </select>
-              </div>
-              <div className="col-12">
-                <label className="form-label">Status</label>
-                <select className="form-select" name='status' value={formData.status} onChange={handleChange}>
-                  <option>Pending</option>
-                  <option>In Progress</option>
-                  <option>Completed</option>
-                </select>
-              </div>
-
-              <div className="col-12 d-md-flex justify-content-md-end">
-                <button type="button" className="btn btn-secondary btn-sm me-md-2" data-bs-dismiss="modal" onClick={resetForm} ref={closeButton}>Cancel</button>
-                <button type="submit" className="btn btn-sm btn-primary">Save Task</button>
-              </div>
-            </form>
-          </div>
+          <button
+            onClick={onClose}
+            className='text-slate-400 hover:text-white'
+          >
+            ✕
+          </button>
         </div>
+
+        <form 
+          onSubmit={handleSubmit}
+          className='p-5 space-y-4'
+        >
+          <div>
+            <label className='block text-xs text-slate-400 mb-2'>Title <span className='text-red-600'>*</span></label>
+            <input 
+              type="text" 
+              value={formData.title} 
+              onChange={(e) => 
+                setFormData((prev) => ({
+                  ...prev,
+                  title: e.target.value,
+                }))
+              }
+              className='w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white' 
+              required
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white"
+            >
+              Create
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-    </>
-  )
+  );
 }
-export default AddTaskModal

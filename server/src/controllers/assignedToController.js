@@ -20,12 +20,14 @@ const assignUser = async (req, res, next) => {
     try {
         const task = await assignUserService({
             taskId: req.params.taskId,
-            userId: req.user
+            userId: req.body.userId,
+            currentUserId: req.user._id,
         })
         res.status(201).json({
             success: true,
             task,
         });
+      
     } catch (error) {
         next(error);
     }
@@ -36,6 +38,7 @@ const removeAssignee = async (req, res, next) => {
         const task = await removeAssigneeService({
             taskId: req.params.taskId,
             userId: req.params.userId,
+            currentUserId: req.user._id,
         });
         res.status(200).json({
             success: true,

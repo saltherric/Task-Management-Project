@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import {getComments, createComment} from "../../services/commentApi";
 import { getStoredUserInfo } from "../../helpers/auth";
+import { useSocket } from "../../contexts/SocketContext";
 
-export default function TaskComments({ taskId }) {
+export default function TaskComments({ taskId, updateField }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isPostingComment, setIsPostingComment] = useState(false);
   const currentUser = getStoredUserInfo();
+  const { socket, isConnected } = useSocket();
 
   useEffect(() => {
     if (!taskId) return;
@@ -29,6 +31,30 @@ export default function TaskComments({ taskId }) {
     fetchComments();
   }, [taskId]);
 
+  useEffect(() => {
+    if (!socket || !isConnected || !taskId) return;
+
+    const handleCommentCreated = (payload) => {
+      if (payload?.taskId !== taskId || !payload.comment) return;
+
+      setComments((prev) => {
+        if (prev.some((comment) => comment._id === payload.comment._id)) {
+          return prev;
+        }
+
+        const next = [payload.comment, ...prev];
+        updateField("commentCount", next.length);
+        return next;
+      });
+    };
+
+    socket.on("comment:created", handleCommentCreated);
+
+    return () => {
+      socket.off("comment:created", handleCommentCreated);
+    };
+  }, [socket, isConnected, taskId, updateField]);
+
   const handleAddComment = async (e) => {
     e.preventDefault();
 
@@ -39,15 +65,7 @@ export default function TaskComments({ taskId }) {
     try {
       setIsPostingComment(true);
 
-      const response = await createComment(
-        taskId,
-        { content }
-      );
-
-      setComments((prev) => [
-        response.comment,
-        ...prev,
-      ]);
+      await createComment(taskId, { content });
 
       setCommentText("");
     } catch (error) {

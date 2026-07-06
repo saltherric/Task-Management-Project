@@ -13,11 +13,16 @@ const attachmentSchema = new mongoose.Schema(
       required: true,
    },
 
-   fileUrl: {
+   fileKey: {
       type: String,
-      required: true,
+      required: true
    },
 
+   fileUrl: {
+      type: String,
+      require: true,
+   },
+   
    size: { 
       type: Number,
       required: true,

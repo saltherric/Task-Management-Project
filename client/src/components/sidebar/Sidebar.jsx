@@ -1,9 +1,12 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import { ThemeContext } from '../../contexts/ThemeContext';
-import getWorkspaces from '../../services/workspaceApi';
-import getProjects from '../../services/projectApi';
+import {getWorkspaces, createWorkspace} from '../../services/workspaceApi';
+import {getProjects, createProject} from '../../services/projectApi';
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
+import WorkspaceModal from './WorkspaceModal';
+import ProjectModal from './ProjectModal';
+import InviteModal from './InviteModal';
 
 function Sidebar() {
   const { theme } = useContext(ThemeContext);
@@ -13,6 +16,9 @@ function Sidebar() {
   const dropdownRef = useRef(null);
   const [workspaces, setWorkspaces] = useState([]);
   const [workspaceDropdownOpen, setWorkspaceDropdownOpen] = useState(false);
+  const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const navigate = useNavigate();
 
   const { workspaceId, projectId} = useParams();
@@ -56,20 +62,20 @@ function Sidebar() {
   }, [workspaces, workspaceId, navigate]);
 
   const navItems = [
-    { label: 'Dashboard', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg> },
+    // { label: 'Dashboard', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg> },
     { label: 'Board', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg> },
-    { label: 'Analytics', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.003 9.003 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg> },
-    { label: 'Activity', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
-    { label: 'Settings', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+    // { label: 'Analytics', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.003 9.003 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg> },
+    // { label: 'Activity', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+    // { label: 'Settings', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
   ];
 
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
-   if (workspaceId) {
-      fetchProjects(workspaceId);
-   }
-}, [workspaceId]);
+    if (workspaceId) {
+        fetchProjects(workspaceId);
+    }
+  }, [workspaceId]);
 
   const fetchProjects = async (workspaceId) => {
     try {
@@ -80,7 +86,47 @@ function Sidebar() {
       console.log("Failed to fetch projects: ", error);
     }  
   }
+
+  const handleCreateWorkspace = async (workspaceData) => {
+    try {
+      const respone = await createWorkspace(workspaceData);
+      setWorkspaces((prev) => [
+        respone.workspace,
+        ...prev
+      ]);
+      setShowCreateWorkspaceModal(false);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleCreateProject = async (formData) => {
+    try {
+      const response = await createProject({
+        ...formData,
+        workspace: workspaceId,
+      });
+
+      setProjects(prev => [
+        response.project,
+        ...prev,
+      ]);
+
+      setShowCreateProjectModal(false);
+
+    } catch (error) {
+      console.error(error);
+    }
+  };
   
+  const handleInviteUser = async (formData) => {
+    try {
+      
+    } catch (error) {
+      
+    }
+  }
+
   return (
     <aside className={`sidebar flex w-full flex-col overflow-hidden border-b ${
       isDark
@@ -98,7 +144,8 @@ function Sidebar() {
               Workspace
             </span>
             <button
-              className="!text-[#0082E6] hover:text-blue-400 p-1 rounded hover:bg-slate-800/40 transition-colors focus:outline-none"
+              onClick={() => setShowCreateWorkspaceModal(true)}
+              className="text-[#0082E6] hover:text-blue-400 p-1 rounded hover:bg-slate-800/40 transition-colors focus:outline-none"
               title="Create Workspace"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
@@ -106,6 +153,14 @@ function Sidebar() {
               </svg>
             </button>
           </div>
+
+          <WorkspaceModal
+            isOpen={showCreateWorkspaceModal}
+            onClose={() =>
+              setShowCreateWorkspaceModal(false)
+            }
+            onCreate={handleCreateWorkspace}
+          />
 
           {/* Workspace switcher */}
           <div className="relative" ref={dropdownRef}>
@@ -169,17 +224,25 @@ function Sidebar() {
           </div>
 
           {/* Invite + Settings */}
-         <div className="mt-1 flex items-center">
-            <button className={`flex flex-1 items-center justify-center gap-2 h-[34px] rounded-lg text-[12px] transition-colors ${
-              isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-            }`}>
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              <span className="text-[12px] font-normal tracking-wider">
-                Invite
-              </span>
+          <div className="mt-1 flex items-center">
+            <button
+              onClick={() => setShowInviteModal(true)} 
+              className={`flex flex-1 items-center justify-center gap-2 h-[34px] rounded-lg text-[12px] transition-colors ${
+                isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              }`}>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                <span className="text-[12px] font-normal tracking-wider">
+                  Invite
+                </span>
             </button>
+
+            <InviteModal
+              isOpen={showInviteModal}
+              workspaceId={workspaceId}
+              onClose={() => setShowInviteModal(false)}
+            />
 
             <div className={`w-px h-5 shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
             <button className={`w-[40px] h-[32px] flex items-center justify-center rounded-lg transition-colors ${
@@ -237,21 +300,39 @@ function Sidebar() {
             <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Projects
             </div>
-            <button
-              type="button"
-              onClick={() => setProjectsExpanded(v => !v)}
-              className={`text-slate-500 transition-colors ${isDark ? 'hover:text-slate-300' : 'hover:text-slate-700'}`}
-              aria-label={projectsExpanded ? 'Collapse projects' : 'Expand projects'}
-            >
-              <svg
-                className={`h-3.5 w-3.5 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`}
-                fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"
+            <div className='flex gap-1'>
+              <button
+                onClick={() => setShowCreateProjectModal(true)}
+                className="text-[#0082E6] hover:text-blue-400 p-1 rounded hover:bg-slate-800/40 transition-colors focus:outline-none"
+                title="Create Project"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setProjectsExpanded(v => !v)}
+                className={`text-slate-500 transition-colors ${isDark ? 'hover:text-slate-300' : 'hover:text-slate-700'}`}
+                aria-label={projectsExpanded ? 'Collapse projects' : 'Expand projects'}
+              >
+                <svg
+                  className={`h-3.5 w-3.5 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <ProjectModal
+                isOpen={showCreateProjectModal}
+                onClose={() =>
+                  setShowCreateProjectModal(false)
+                }
+                onCreate={ handleCreateProject }
+              />
+            </div>
           </div>
-
+          
           {projectsExpanded && (
             <div className="space-y-1">
               {projects.map((project) => (

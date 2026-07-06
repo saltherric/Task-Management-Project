@@ -6,16 +6,18 @@ import TaskDescription from "./TaskDescription";
 import TaskComments from "./TaskComments";
 import TaskAttachments from "./TaskAttachments";
 import TaskAssignedTo from "./TaskAssignedTo";
-import TaskMetadata from "./TaskMetaData";
-import { updateTask } from "../../services/taskApi";
+import TaskTags from "./TaskTags";
+import { updateTask, deleteTask } from "../../services/taskApi";
 import useAutoSave from "../../hooks/useAutoSave";
 import TaskDueDate from "./TaskDueDate";
+import TaskMetaData from "./TaskMetaData";
 
 export default function TaskModal({
   task,
   isOpen,
   onClose,
   onUpdateTask,
+  onDeleteTask
 }) {
   const [localTask, setLocalTask] = useState(task);
   const [dirtyFields, setDirtyFields] = useState({});
@@ -42,6 +44,20 @@ export default function TaskModal({
     }));
   };
 
+  const handleTaskUpdate = (updatedTask) => {
+    setLocalTask(updatedTask);
+    onUpdateTask(updatedTask);
+  };
+
+  const handleDeleteTask = async () => {
+    try {
+      await deleteTask(localTask._id);
+      onDeleteTask(localTask._id);
+    } catch (error) {
+      console.error("Failed to delete task", error);
+    }
+  };
+
   useAutoSave(
     dirtyFields,
     async () => {
@@ -52,24 +68,24 @@ export default function TaskModal({
       ) {
         return;
       }
-
+      
       try {
         setSaveStatus("saving");
+        
+        const response = await updateTask(
+          localTask._id,
+          dirtyFields
+        );
 
-        const response =
-          await updateTask(
-            localTask._id,
-            dirtyFields
-          );
+        const updatedTask = response?.task ?? response;
 
-        if (response?.task) {
-          onUpdateTask(
-            response.task
-          );
+        if (updatedTask) {
+          onUpdateTask(updatedTask);
         }
 
         setSaveStatus("saved");
         setDirtyFields({});
+
       } catch (error) {
         console.error(error);
         setSaveStatus("error");
@@ -85,14 +101,15 @@ export default function TaskModal({
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
 
-      <div className="bg-slate-900 h-[90vh] w-[] max-w-7xl rounded-xl overflow-hidden flex flex-col">
+      <div className="bg-slate-900 h-[90vh] w-[95vw] max-w-7xl rounded-xl overflow-hidden flex flex-col">
 
-        {/* Fixed Top Area */}
+        {/* Top Area */}
         <TaskBadge
           task={localTask}
           saveStatus={saveStatus}
           onClose={onClose}
-          updateField={updateField}
+          onTaskUpdate={handleTaskUpdate}
+          onTaskDelete={handleDeleteTask}
         />
 
         <TaskHeader
@@ -113,20 +130,22 @@ export default function TaskModal({
 
             <TaskAttachments
               taskId={localTask._id}
+              updateField={updateField}
             />
 
             <TaskComments
               taskId={localTask._id}
+              updateField={updateField}
             />
             
           </div>
 
           {/* Sidebar */}
-          <aside className="border-l border-slate-800 overflow-y-auto p-5">
+          <aside className="border-l border-slate-800 overflow-y-auto p-5 space-y-6">
 
             <TaskAssignedTo
               task={localTask}
-              onTaskUpdate={setLocalTask}
+              onTaskUpdate={handleTaskUpdate}
             />
 
             <TaskDueDate
@@ -134,10 +153,14 @@ export default function TaskModal({
               updateField={updateField}
             />
 
-            <TaskMetadata
+            <TaskTags
               task={localTask}
+              updateField={updateField}
             />
 
+            <TaskMetaData
+              task={localTask}
+            />
           </aside>
 
         </div>
