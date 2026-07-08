@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { getWorkspaceMembers, getAvailableMembers, invitesMember, updateRoleMember } from '../../services/workspaceApi';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { getWorkspaceMembers, getAvailableMembers, invitesMember, updateRoleMember, leaveWorkspace } from '../../services/workspaceApi';
 import {createInviteLink}  from '../../services/inviteApi';
+import { getStoredUserInfo } from "../../helpers/auth";
 
 export default function InviteModal({ isOpen, workspaceId ,onClose}) {
     const [members, setMembers] = useState([]);
@@ -16,6 +17,28 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
 
     const searchContainerRef = useRef(null);
 
+    const currentUser = getStoredUserInfo();
+
+    const getMemberUserId = (member) => member?.user?._id || member?._id;
+
+    const currentMember = useMemo(() => {
+      return members.find(
+        member => getMemberUserId(member) === currentUser?._id
+      );
+    }, [members, currentUser]);
+
+    const isAdmin = currentMember?.role === "admin";
+
+    const fetchMembers = useCallback(async (workspaceId) => {
+      const data = await getWorkspaceMembers(workspaceId);
+      setMembers(data.members);
+    }, []);
+
+    const fetchAvailableMembers = useCallback(async (workspaceId) => {
+      const data = await getAvailableMembers(workspaceId);
+      setAvailableMembers(data.availableMembers);
+    }, []);
+
     // Close suggestions box if user clicks outside of search input area
     useEffect(() => {
       function handleClickOutside(event) {
@@ -30,19 +53,26 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
     useEffect(() => {
       if (!isOpen || !workspaceId) return;
 
-      fetchMembers(workspaceId);
-      fetchAvailableMembers();
-    }, [isOpen, workspaceId]);
-    
-    const fetchMembers = async (workspaceId) => {
-      const data = await getWorkspaceMembers(workspaceId);
-      setMembers(data.members);
-    }
+      let isMounted = true;
 
-    const fetchAvailableMembers = async () => {
-      const data = await getAvailableMembers(workspaceId);
-      setAvailableMembers(data.availableMembers);
-    }
+      const fetchInitialData = async () => {
+        const [membersData, availableMembersData] = await Promise.all([
+          getWorkspaceMembers(workspaceId),
+          getAvailableMembers(workspaceId),
+        ]);
+
+        if (!isMounted) return;
+
+        setMembers(membersData.members);
+        setAvailableMembers(availableMembersData.availableMembers);
+      };
+
+      fetchInitialData();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [isOpen, workspaceId]);
 
     const filteredSuggestions = useMemo(() => {
       if (!searchQuery.trim()) return [];
@@ -61,15 +91,11 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
     
     // Handle adding user to active workspace members list
     const handleAddMember = async (user) => {
-      try {
-        const data = await invitesMember(workspaceId, {
-          userId: user._id,
-        });
-        await fetchMembers(workspaceId);
-        await fetchAvailableMembers();
-      } catch (error) {
-        console.error(error);
-      }
+      return invitesMember( 
+        workspaceId,
+        user._id,
+        selectedRole
+      );
     }
   
     const handleShareSubmit = async (e) => {
@@ -81,6 +107,10 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
         for (const user of selectedUsers) {
           await handleAddMember(user);
         }
+        await Promise.all([
+          fetchMembers(workspaceId),
+          fetchAvailableMembers(workspaceId),
+        ]);
 
         setSelectedUsers([]);
         setSearchQuery('');
@@ -89,52 +119,113 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
         showToast(`${selectedUsers.length} member(s) invited successfully`);
       } catch (error) {
         console.error(error);
+         showToast(
+          error.response?.data?.message ||
+          "Failed to invite members."
+        );
       }
     };  
-  
-    const handleRoleChange = async ( memberId, newRole) => {
-      await updateRoleMember(
-        workspaceId,
-        memberId,
-        newRole
-      );
-      setMembers(prev =>
-        prev.map(member =>
-          member._id === memberId
-            ? { ...member, role: newRole }
-            : member
-        )
-      );
-    };
-  
-    const handleLinkAction = async () => {
-      try {
-          // First click → create link
-          if (!inviteLink) {
-              const data = await createInviteLink(workspaceId);
-              setInviteLink(data.link);
-              showToast("Workspace invite link created!");
-              return;
-          }
+    const handleLeaveWorkspace = async () => {
 
-          // Second click → copy
-          await navigator.clipboard.writeText(inviteLink);
-          setLinkCopied(true);
-          showToast("Invite link copied!");
-          setTimeout(() => {
-              setLinkCopied(false);
-          }, 2000);
+      const confirmed = window.confirm(
+          "Leave this workspace?"
+      );
+
+      if (!confirmed) return;
+
+      try {
+
+          await leaveWorkspace(workspaceId);
+
+          showToast("Left workspace.");
+
+          onClose();
 
       } catch (error) {
 
-          console.error(error);
-
           showToast(
               error.response?.data?.message ||
-              "Failed to create invite link"
+              "Unable to leave workspace."
           );
+
       }
   };
+
+    const handleRoleChange = async (memberId, newRole) => {
+      try {
+          await updateRoleMember(
+              workspaceId,
+              memberId,
+              newRole
+          );
+
+          setMembers(prev =>
+              prev.map(member =>
+                  member._id === memberId
+                      ? { ...member, role: newRole }
+                      : member
+              )
+          );
+
+          showToast("Role updated.");
+      } catch (error) {
+          showToast(
+              error.response?.data?.message ||
+              "Failed to update role."
+          );
+      }
+    };
+  
+    const handleLinkAction = async () => {
+    try {
+
+        // Create invite link
+        if (!inviteLink) {
+
+            const { link } = await createInviteLink(
+                workspaceId,
+                selectedRole
+            );
+
+            setInviteLink(link);
+
+            await navigator.clipboard.writeText(link);
+
+            setLinkCopied(true);
+
+            showToast(
+                `${selectedRole} invite link created & copied!`
+            );
+
+            setTimeout(() => {
+                setLinkCopied(false);
+            }, 2000);
+
+            return;
+        }
+
+        // Copy existing link
+
+        await navigator.clipboard.writeText(inviteLink);
+
+        setLinkCopied(true);
+
+        showToast("Invite link copied!");
+
+        setTimeout(() => {
+            setLinkCopied(false);
+        }, 2000);
+
+    } catch (error) {
+
+        console.error(error);
+
+        showToast(
+            error.response?.data?.message ||
+            "Failed to create invite link."
+        );
+    }
+};
   
     const showToast = (msg) => {
       setToastMessage(msg);
@@ -279,15 +370,15 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
                 )}
               </div>
   
-              {/* Role dropdown Selector */}
+              {/* Role Selector */}
               <div className="w-full sm:w-32 shrink-0">
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="w-full h-11 bg-slate-900/60 border border-slate-800/80 rounded-xl px-3 text-xs text-slate-300 font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="w-full h-11 rounded-xl border border-slate-800/80 bg-slate-900/60 px-3 text-sm text-slate-300 focus:border-[#0082E6] focus:outline-none cursor-pointer"
                 >
-                  <option value="admin">Admin</option>
-                  <option value="member">Member</option>
+                  <option value="member" className='bg-[#1F1F23]'>Member</option>
+                  <option value="admin" className='bg-[#1F1F23]'>Admin</option>
                 </select>
               </div>
   
@@ -347,7 +438,7 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
           <div className="mt-5 flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between shrink-0">
               <span className="text-xs font-extrabold tracking-wider text-slate-450 uppercase">
-                Board members [{members.length}]
+                Workspace members [{members.length}]
               </span>
             </div>
   
@@ -356,7 +447,12 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
   
             {/* Member List Scroll Area */}
             <div className="flex-1 overflow-y-auto pr-1 space-y-1 scrollbar-thin">
-              {members.map((member) => (
+              {members.map((member) => {
+                const isSelf = getMemberUserId(member) === currentUser?._id;
+                const canOpenDropdown = isAdmin || isSelf;
+                const canChangeRole = isAdmin && !isSelf;
+
+                return (
                 <div 
                   key={member._id} 
                   className="flex items-center justify-between py-3.5 border-b border-slate-800/20 last:border-0"
@@ -381,23 +477,48 @@ export default function InviteModal({ isOpen, workspaceId ,onClose}) {
   
                   {/* Role Selector on the Right */}
                   <div className="shrink-0 pl-3">
-                      <select
-                        value={member.role}
-                        onChange={(e) =>
-                          handleRoleChange(
-                            member._id,
-                            e.target.value
-                          )
-                        }
-                        className="bg-transparent text-xs font-bold text-slate-400 hover:text-slate-100 transition-colors border-0 outline-none cursor-pointer focus:ring-0 focus:ring-offset-0"
-                      >
-                      <option value="admin" className="bg-[#1F1F23] text-slate-300">Admin</option>
-                      <option value="member" className="bg-[#1F1F23] text-slate-300">Member</option>
+                    <select 
+                        value={isSelf ? "__self__" : member.role}
+                        disabled={!canOpenDropdown}
+                        onChange={(e) => {
+
+                            if (e.target.value === "leave") {
+                                handleLeaveWorkspace();
+                                return;
+                            }
+
+                            if (!canChangeRole) return;
+
+                            handleRoleChange(
+                                member._id,
+                                e.target.value
+                            );
+                        }}
+                        
+                        className={`bg-transparent text-xs font-bold text-slate-400 hover:text-slate-100 border-0 outline-none focus:ring-0 focus:ring-offset-0 ${
+                        canOpenDropdown ? "cursor-pointer" : "cursor-not-allowed text-slate-600"
+                      }`}
+                    >
+                      {isSelf ? (
+                        <>
+                          <option value="__self__" disabled className="bg-[#1F1F23]">
+                            {member.role === "admin" ? "Admin (You)" : "Member (You)"}
+                          </option>
+                          <option value="leave" className="bg-[#1F1F23] text-rose-400">
+                            Leave Workspace
+                          </option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="admin" className="bg-[#1F1F23]">Admin</option>
+                          <option value="member" className="bg-[#1F1F23]">Member</option>
+                        </>
+                      )}
                     </select>
                   </div>
-  
                 </div>
-              ))}
+                );
+              })}
             </div>
   
           </div>

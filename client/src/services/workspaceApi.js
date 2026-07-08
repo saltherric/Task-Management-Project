@@ -33,8 +33,11 @@ const getAvailableMembers = async (workspaceId) => {
     return response.data;
 }
 
-const invitesMember = async (workspaceId, userId) => {
-    const response = await API.post(`/workspaces/${workspaceId}/invite`, userId);
+const invitesMember = async (workspaceId, userId, role) => {
+    const response = await API.post(`/workspaces/${workspaceId}/invite`, {
+        userId,
+        role
+    });
     return response.data;
 }
 
@@ -45,6 +48,10 @@ const updateRoleMember = async (workspaceId, memberId, newRole) => {
     return response.data;
 }
 
+const leaveWorkspace = async (workspaceId) => {
+    const response = await API.delete(`workspaces/${workspaceId}/leave`);
+    return response.data;
+}
 
 export{
     getWorkspaces,
@@ -55,4 +62,5 @@ export{
     getAvailableMembers,
     invitesMember,
     updateRoleMember,
+    leaveWorkspace
 };

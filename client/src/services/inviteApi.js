@@ -1,8 +1,10 @@
 import API from "./api";
 
-export const createInviteLink = async (workspaceId) => {
+export const createInviteLink = async (workspaceId, role) => {
     const res = await API.post(
-        `/workspaces/${workspaceId}/invite-link`
+      `/workspaces/${workspaceId}/invite-link`, {
+        role,
+      }
     );
 
     return res.data;

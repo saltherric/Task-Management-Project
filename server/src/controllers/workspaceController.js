@@ -1,5 +1,5 @@
 const { createWorkspace: createWorkspaceService, getWorkspaces: getWorkspacesService, getWorkspaceTags: getWorkspaceTagsService, addWorkspaceTag: addWorkspaceTagService  } = require("../services/workspaceService");
-const { getWorkspaceMembers: getWorkspaceMembersService, getAvailableMembers: getAvailableMembersService, invitesMember: invitesMemberService, updateMemberRole: updateMemberRoleService} = require("../services/InvitedService");
+const { getWorkspaceMembers: getWorkspaceMembersService, getAvailableMembers: getAvailableMembersService, invitesMember: invitesMemberService, updateMemberRole: updateMemberRoleService, leaveWorkspace} = require("../services/InvitedService");
 const createWorkspace = async (req, res, next) => {
     try {
         const workspace = await createWorkspaceService({
@@ -87,16 +87,19 @@ const getAvailableMembers = async (req, res, next) => {
 }
 
 const invitesMember = async (req, res, next) => {
-    try {
+    try {console.log(req.body);
         const member = await invitesMemberService({
             workspaceId: req.params.workspaceId,
             userId: req.body.userId,
+            role: req.body.role,
+            requesterId: req.user._id,
         })
         res.status(201).json({
             success: true,
             member,
         })
     } catch (error) {
+         console.error(error);
         next(error);
     }
 }
@@ -107,7 +110,9 @@ const updateMemberRole = async (req, res, next) => {
             workspaceId: req.params.workspaceId,
             memberId: req.params.memberId,
             role: req.body.role,
+            
         })
+        
         res.status(200).json({
             success: true,
             roles,
@@ -116,6 +121,22 @@ const updateMemberRole = async (req, res, next) => {
         next(error);
     }
 }
+const leaveWorkspaceController = async (req, res, next) => {
+    try {
+        const workspace = await leaveWorkspace({
+            workspaceId: req.params.workspaceId,
+            userId: req.user._id,
+        });
+
+        res.status(200).json({
+            message: "Left workspace successfully",
+            workspace,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = { 
     createWorkspace, 
     getWorkspaces, 
@@ -124,5 +145,6 @@ module.exports = {
     getWorkspaceMembers, 
     getAvailableMembers, 
     invitesMember, 
-    updateMemberRole
+    updateMemberRole,
+    leaveWorkspaceController
 };

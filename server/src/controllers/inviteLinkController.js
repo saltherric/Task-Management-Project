@@ -2,10 +2,11 @@ const {createInviteLink, validateInviteLink, joinWorkspace} = require("../servic
 
 const createInviteLinkController = async (req, res, next) => {
     try {
-        const inviteLink = await createInviteLink(
-            req.params.workspaceId,
-            req.user._id
-        );
+        const inviteLink = await createInviteLink({
+            workspaceId: req.params.workspaceId,
+            requesterId: req.user._id,
+            role: req.body.role,
+        });
 
         res.status(201).json({
             message: "Invite link created",

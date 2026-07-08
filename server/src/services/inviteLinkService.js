@@ -2,23 +2,39 @@ const crypto = require("crypto");
 const InviteLink = require("../models/InviteLink.js");
 const Workspace = require("../models/Workspace.js");
 
-const createInviteLink = async (workspaceId, userId) => {
+const createInviteLink = async ({
+    workspaceId,
+    requesterId,
+    role = "member"
+}) => {
+
     const workspace = await Workspace.findById(workspaceId);
 
     if (!workspace) {
         throw new Error("Workspace not found");
     }
 
-    const member = workspace.members.find(
-        (m) => m.user.toString() === userId.toString()
+    const requester = workspace.members.find(
+        m => m.user.toString() === requesterId.toString()
     );
 
-    if (!member) {
+    if (!requester) {
         throw new Error("You are not a workspace member");
     }
 
-    if (member.role !== "admin" && member.role !== "owner") {
+    if (requester.role !== "admin") {
         throw new Error("Only admins can create invite links");
+    }
+
+    const existingLink = await InviteLink.findOne({
+        workspace,
+        role,
+        isActive: true,
+        expiresAt: { $gt: new Date() },
+    });
+
+    if (existingLink) {
+        return existingLink;
     }
 
     const token = crypto.randomBytes(32).toString("hex");
@@ -26,26 +42,14 @@ const createInviteLink = async (workspaceId, userId) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const existingLink = await InviteLink.findOne({
-        workspace,
-        isActive: true,
-        expiresAt: { $gt: new Date() },
-    })
-    .lean()
-    .populate("workspace");
-
-    if (existingLink) {
-        return existingLink;
-    }
-
-    const inviteLink = await InviteLink.create({
+    return await InviteLink.create({
         workspace,
         token,
-        createdBy: userId,
+        role,
+        createdBy: requesterId,
         expiresAt,
     });
-    return inviteLink;
-}
+};
 
 const validateInviteLink = async (token) => {
     const invite = await InviteLink.findOne({
