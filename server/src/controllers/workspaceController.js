@@ -1,5 +1,6 @@
 const { createWorkspace: createWorkspaceService, getWorkspaces: getWorkspacesService, getWorkspaceTags: getWorkspaceTagsService, addWorkspaceTag: addWorkspaceTagService  } = require("../services/workspaceService");
-const { getWorkspaceMembers: getWorkspaceMembersService, getAvailableMembers: getAvailableMembersService, invitesMember: invitesMemberService, updateMemberRole: updateMemberRoleService, leaveWorkspace} = require("../services/InvitedService");
+const { getWorkspaceMembers: getWorkspaceMembersService, updateWorkspace, deleteWorkspace, getAvailableMembers: getAvailableMembersService, invitesMember: invitesMemberService, updateMemberRole: updateMemberRoleService, leaveWorkspace} = require("../services/InvitedService");
+const { emitToWorkspace } = require("../socket/socketGateway");
 const createWorkspace = async (req, res, next) => {
     try {
         const workspace = await createWorkspaceService({
@@ -28,6 +29,47 @@ const getWorkspaces = async (req, res, next) => {
         next(error);
     }
 }
+
+const updateWorkspaceController = async (req, res, next) => {
+    try {
+        const workspace =  await updateWorkspace({
+            workspaceId: req.params.workspaceId,
+            workspaceData: req.body,
+            user: req.user
+        });
+
+        emitToWorkspace(req.params.workspaceId, "workspace:updated", {
+            workspaceId: req.params.workspaceId,
+            workspace,
+        });
+
+        res.status(200).json({
+            success: true,
+            workspace
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+const deleteWorkspaceController = async (req, res, next) => {
+    try {
+        emitToWorkspace(req.params.workspaceId, "workspace:deleted", {
+            workspaceId: req.params.workspaceId,
+        });
+
+        await deleteWorkspace({
+            workspaceId: req.params.workspaceId,
+            user: req.user,
+        });
+
+        res.status(200).json({
+            success: true,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 const getTags = async (req, res, next) => {
     try {
@@ -113,6 +155,12 @@ const updateMemberRole = async (req, res, next) => {
             
         })
         
+        emitToWorkspace(req.params.workspaceId, "workspace:role_updated", {
+            workspaceId: req.params.workspaceId,
+            memberId: req.params.memberId,
+            role: req.body.role,
+        });
+
         res.status(200).json({
             success: true,
             roles,
@@ -140,6 +188,8 @@ const leaveWorkspaceController = async (req, res, next) => {
 module.exports = { 
     createWorkspace, 
     getWorkspaces, 
+    updateWorkspaceController,
+    deleteWorkspaceController,
     getTags, 
     createTag, 
     getWorkspaceMembers, 

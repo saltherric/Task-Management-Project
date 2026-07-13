@@ -1,57 +1,62 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { ThemeContext } from "../../contexts/ThemeContext";
 
 export default function TaskHeader({ task, updateField }) {
+  const { theme } = useContext(ThemeContext);
+  const isDark = theme === "dark";
+
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(task?.title || "");
   const [activeDropdown, setActiveDropdown] = useState(null);
+  
   const statusConfig = {
     todo: {
         label: "To do",
-        bg: "bg-slate-500/10",
-        border: "border-slate-500/20",
-        text: "text-slate-300"
+        bg: isDark ? "bg-slate-500/10" : "bg-slate-100",
+        border: isDark ? "border-slate-500/20" : "border-slate-250",
+        text: isDark ? "text-slate-300" : "text-slate-600"
     },
-    in_progress: {
+    inprogress: {
         label: "In Progress",
-        bg: "bg-blue-500/10",
-        border: "border-blue-500/20",
-        text: "text-blue-300"
+        bg: isDark ? "bg-blue-500/10" : "bg-blue-50",
+        border: isDark ? "border-blue-500/20" : "border-blue-200/50",
+        text: isDark ? "text-blue-300" : "text-blue-600"
     },
     review: {
         label: "Review",
-        bg: "bg-amber-500/10",
-        border: "border-amber-500/20",
-        text: "text-amber-300"
+        bg: isDark ? "bg-amber-500/10" : "bg-amber-50",
+        border: isDark ? "border-amber-500/20" : "border-amber-200/50",
+        text: isDark ? "text-amber-300" : "text-amber-600"
     },
     done: {
         label: "Done",
-        bg: "bg-emerald-500/20",
-        border: "border-emerald-500/20",
-        text: "text-emerald-300"
+        bg: isDark ? "bg-emerald-500/20" : "bg-emerald-50",
+        border: isDark ? "border-emerald-500/20" : "border-emerald-250/50",
+        text: isDark ? "text-emerald-300" : "text-emerald-600"
     }
   };
 
   const priorityConfig = {
     low: {
         label: "Low",
-        bg: "bg-green-500/10",
-        border: "border-green-500/20",
-        text: "text-green-300",
+        bg: isDark ? "bg-green-500/10" : "bg-emerald-50",
+        border: isDark ? "border-green-500/20" : "border-emerald-200/50",
+        text: isDark ? "text-green-300" : "text-emerald-600",
     },
     medium: {
         label: "Medium",
-        bg: "bg-yellow-500/10",
-        border: "border-yellow-500/20",
-        text: "text-yellow-300",
+        bg: isDark ? "bg-yellow-500/10" : "bg-amber-50",
+        border: isDark ? "border-yellow-500/20" : "border-amber-200/50",
+        text: isDark ? "text-yellow-300" : "text-amber-600",
     },
     high: {
         label: "High",
-        bg: "bg-orange-500/10",
-        border: "border-orange-500/20",
-        text: "text-orange-300",
+        bg: isDark ? "bg-orange-500/10" : "bg-rose-50",
+        border: isDark ? "border-orange-500/20" : "border-rose-200/50",
+        text: isDark ? "text-orange-300" : "text-rose-600",
     },
   };
-  
+
   useEffect(() => {
     setTempTitle(task?.title || "");
   }, [task?.title]);
@@ -78,9 +83,12 @@ export default function TaskHeader({ task, updateField }) {
         z-20
         px-6
         py-5
-        bg-[#0D0E11]
+        bg-slate-50/50
+        dark:bg-[#0D0E11]
         border-b
-        border-[#1C1D22]
+        border-slate-200
+        dark:border-[#1C1D22]
+        backdrop-blur-md
       "
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -132,7 +140,7 @@ export default function TaskHeader({ task, updateField }) {
 
               {activeDropdown ===
                 "status" && (
-                <div className="absolute left-0 mt-1 w-40 rounded-xl bg-[#14161C] border border-[#272B35] shadow-2xl p-1 z-30">
+                <div className="absolute left-0 mt-1 w-40 rounded-xl bg-white dark:bg-[#14161C] border border-slate-200 dark:border-[#272B35] shadow-2xl p-1 z-30">
 
                   {Object.keys(
                     statusConfig
@@ -155,7 +163,10 @@ export default function TaskHeader({ task, updateField }) {
                         px-3 py-2
                         rounded-lg
                         text-xs
-                        hover:bg-[#1E212A]
+                        text-slate-700
+                        dark:text-neutral-300
+                        hover:bg-slate-100
+                        dark:hover:bg-[#1E212A]
                       "
                     >
                       {
@@ -205,7 +216,7 @@ export default function TaskHeader({ task, updateField }) {
 
               {activeDropdown ===
                 "priority" && (
-                <div className="absolute left-0 mt-1 w-44 rounded-xl bg-[#14161C] border border-[#272B35] shadow-2xl p-1 z-30">
+                <div className="absolute left-0 mt-1 w-44 rounded-xl bg-white dark:bg-[#14161C] border border-slate-200 dark:border-[#272B35] shadow-2xl p-1 z-30">
 
                   {Object.keys(
                     priorityConfig
@@ -228,7 +239,10 @@ export default function TaskHeader({ task, updateField }) {
                         px-3 py-2
                         rounded-lg
                         text-xs
-                        hover:bg-[#1E212A]
+                        text-slate-700
+                        dark:text-neutral-300
+                        hover:bg-slate-100
+                        dark:hover:bg-[#1E212A]
                       "
                     >
                       {
@@ -279,14 +293,17 @@ export default function TaskHeader({ task, updateField }) {
                 autoFocus
                 className="
                   flex-1
-                  bg-[#16181D]
+                  bg-white
+                  dark:bg-[#16181D]
                   border
-                  border-indigo-500/40
+                  border-slate-350
+                  dark:border-indigo-500/40
                   rounded-xl
                   px-3 py-2
                   text-xl
                   font-bold
-                  text-white
+                  text-slate-900
+                  dark:text-white
                 "
               />
 
@@ -296,6 +313,7 @@ export default function TaskHeader({ task, updateField }) {
                   px-4 py-2
                   rounded-lg
                   bg-indigo-600
+                  text-white
                 "
               >
                 Save
@@ -310,9 +328,11 @@ export default function TaskHeader({ task, updateField }) {
               className="
                 text-2xl
                 font-bold
-                text-white
+                text-slate-900
+                dark:text-white
                 cursor-pointer
-                hover:bg-[#15171D]
+                hover:bg-slate-100
+                dark:hover:bg-[#15171D]
                 rounded-lg
                 px-2 py-1
                 -mx-2
@@ -327,9 +347,11 @@ export default function TaskHeader({ task, updateField }) {
         {/* Right */}
         <div
           className="
-            bg-[#171A21]
+            bg-slate-100
+            dark:bg-[#171A21]
             border
-            border-[#272B35]
+            border-slate-200
+            dark:border-[#272B35]
             px-3 py-1.5
             rounded-xl
             shrink-0

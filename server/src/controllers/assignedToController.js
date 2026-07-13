@@ -6,7 +6,7 @@ const {
 
 const getAvailableAssignees = async (req, res, next) => {
     try {
-        const assignees = await getAvailableAssigneesService(req.params.taskId);
+        const assignees = await getAvailableAssigneesService(req.params.taskId, req.user._id);
         res.status(200).json({
             success: true,
             assignees

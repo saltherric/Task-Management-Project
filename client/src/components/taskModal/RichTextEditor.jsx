@@ -82,7 +82,7 @@ export default function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "rich-text-editor min-h-[250px] max-h-[250px] overflow-y-auto p-4 focus:outline-none text-neutral-300",
+          "rich-text-editor min-h-[250px] max-h-[250px] overflow-y-auto p-4 focus:outline-none text-slate-700 dark:text-neutral-300",
       },
     },
 
@@ -152,10 +152,10 @@ export default function RichTextEditor({
   }
 
   return (
-    <div className="border border-[#222429] rounded-xl bg-[#121316] overflow-hidden">
+    <div className="border border-slate-200 dark:border-[#222429] rounded-xl bg-white dark:bg-[#121316] overflow-hidden">
 
       {/* Toolbar */}
-      <div className=" flex flex-wrap items-center gap-1 p-3 bg-[#17181c] border-b border-[#222429]">
+      <div className=" flex flex-wrap items-center gap-1 p-3 bg-slate-50 dark:bg-[#17181c] border-b border-slate-200 dark:border-[#222429]">
         <ToolbarButton
           title="Undo"
           disabled={!canRun((chain) => chain.undo())}

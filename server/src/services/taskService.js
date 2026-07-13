@@ -6,6 +6,35 @@ const User = require("../models/User");
 const {createNotification} = require("../services/notificationService");
 const Column = require("../models/Column");
 const { emitToWorkspace } = require("../socket/socketGateway");
+const { getProjectForUser } = require("./projectAccessService");
+
+const canAccessProject = (project, userId) =>
+    project.visibility === "workspace" ||
+    project.createdBy.toString() === userId.toString() ||
+    (project.members || []).some((member) => member.user.toString() === userId.toString());
+
+const mapColumnNameToStatus = (columnName) => {
+    const name = columnName?.trim().toLowerCase();
+    if (name === "done") return "done";
+    if (name === "review") return "review";
+    if (name === "in progress") return "inprogress";
+    return "todo";
+};
+
+const mapStatusToColumnName = (status) => {
+    switch (status) {
+        case "todo":
+            return "to do";
+        case "inprogress":
+            return "in progress";
+        case "review":
+            return "review";
+        case "done":
+            return "done";
+        default:
+            return "to do";
+    }
+};
 
 const createTask = async ({ taskData, user, project, column }) => {
     const smartPriorityScore = calculateSmartPriority(taskData.priority, taskData.dueDate);
@@ -42,8 +71,14 @@ const createTask = async ({ taskData, user, project, column }) => {
             if(!isMember){
                 throw new Error('Assigned user is not workspace member');
             }
+            if (!canAccessProject(project, userId)) {
+                throw new Error('Assigned user does not have access to this private project');
+            }
         }
     }
+
+    const calculatedStatus = taskData.status || mapColumnNameToStatus(column.name);
+    const completedAt = calculatedStatus === "done" ? new Date() : null;
 
     const task = await Task.create({
         title: taskData.title,
@@ -52,7 +87,8 @@ const createTask = async ({ taskData, user, project, column }) => {
         column: taskData.column,
         createdBy: user._id,
         assignedTo: taskData.assignedTo,
-        status: taskData.status,
+        status: calculatedStatus,
+        completedAt,
         priority: taskData.priority,
         smartPriorityScore,
         tags: taskData.tags,
@@ -83,20 +119,7 @@ const createTask = async ({ taskData, user, project, column }) => {
 
 const getTasks = async (projectId, user) => {
 
-    const project = await Project.findById(projectId);
-
-    if (!project) {
-        throw new Error("Project not found");
-    }
-
-    const workspace = await Workspace.findOne({
-        _id: project.workspace,
-        "members.user": user._id,
-    });
-
-    if (!workspace) {
-        throw new Error("Access denied");
-    }
+    await getProjectForUser({ projectId, userId: user._id });
 
     const tasks = await Task.find({
         project: projectId,
@@ -117,17 +140,8 @@ const updateTask = async ({ taskId, taskData, user }) => {
         throw new Error("Task not found");
     }
 
-    const project = await Project.findById(
-        task.project
-    );
-
-    const workspace = await Workspace.findOne({
-        _id: project.workspace,
-        "members.user": user._id,
-    });
-    if (!workspace) {
-        throw new Error("Access denied");
-    }
+    const project = await getProjectForUser({ projectId: task.project, userId: user._id });
+    const workspace = await Workspace.findById(project.workspace);
 
     const oldTask = {
         title: task.title,
@@ -159,6 +173,9 @@ const updateTask = async ({ taskId, taskData, user }) => {
                     "Assigned user is not workspace member"
                 );
             }
+            if (!canAccessProject(project, userId)) {
+                throw new Error("Assigned user does not have access to this private project");
+            }
         }
     }
 
@@ -169,14 +186,35 @@ const updateTask = async ({ taskId, taskData, user }) => {
         dueDate
     );
 
+    const oldStatus = task.status;
+
     task.title = taskData.title ?? task.title;
     task.description = taskData.description ?? task.description;
     task.priority = taskData.priority ?? task.priority;
-    task.status = taskData.status ?? task.status;
     task.assignedTo = taskData.assignedTo ?? task.assignedTo;
     task.tags = taskData.tags ?? task.tags;
     task.dueDate = taskData.dueDate ?? task.dueDate;
-    // task.column = taskData.column ?? task.column;
+
+    if (taskData.status && taskData.status !== oldStatus) {
+        task.status = taskData.status;
+
+        // Sync column
+        const projectColumns = await Column.find({ project: task.project });
+        const targetColName = mapStatusToColumnName(taskData.status);
+        const matchingCol = projectColumns.find(
+            col => col.name.trim().toLowerCase() === targetColName
+        );
+        if (matchingCol) {
+            task.column = matchingCol._id;
+        }
+
+        // Sync completedAt
+        if (taskData.status === "done") {
+            task.completedAt = new Date();
+        } else if (oldStatus === "done") {
+            task.completedAt = null;
+        }
+    }
 
     await task.save();
 
@@ -248,7 +286,7 @@ const deleteTask = async ({ taskId, user }) => {
         throw new Error("Task not found");
     }
 
-    const project = await Project.findById(task.project);
+    const project = await getProjectForUser({ projectId: task.project, userId: user._id });
     const workspace = await Workspace.findById(project.workspace);
 
     const member = workspace.members.find(
@@ -288,7 +326,7 @@ const archiveTask = async (taskId, userId) => {
         throw new Error("Task not found");
     }
 
-    const project = await Project.findById(task.project).select("workspace");
+    const project = await getProjectForUser({ projectId: task.project, userId });
 
     task.isArchived = true;
     task.archivedAt = new Date();
@@ -323,7 +361,7 @@ const unarchiveTask = async (taskId, userId) => {
         throw new Error("Task not found");
     }
 
-    const project = await Project.findById(task.project).select("workspace");
+    const project = await getProjectForUser({ projectId: task.project, userId });
 
     task.isArchived = false;
     task.archivedAt = null;
@@ -351,7 +389,8 @@ const unarchiveTask = async (taskId, userId) => {
     return populatedTask;
 };
 
-const getArchivedTasks = async (projectId) => {
+const getArchivedTasks = async (projectId, userId) => {
+    await getProjectForUser({ projectId, userId });
     return await Task.find({
         project: projectId,
         isArchived: true,
@@ -367,11 +406,7 @@ const moveTask = async ({ taskId, columnId, user }) => {
         throw new Error("Task not found");
     }
 
-    const project = await Project.findById(task.project);
-
-    if (!project) {
-        throw new Error("Project not found");
-    }
+    const project = await getProjectForUser({ projectId: task.project, userId: user._id });
 
     const workspace = await Workspace.findById(project.workspace);
 
@@ -390,6 +425,9 @@ const moveTask = async ({ taskId, columnId, user }) => {
         oldColumn?.name?.trim().toLowerCase() === "done";
 
     task.column = columnId;
+    if (newColumn) {
+        task.status = mapColumnNameToStatus(newColumn.name);
+    }
     task.completedAt = isMovingToDone
         ? new Date()
         : (wasInDone ? null : task.completedAt);

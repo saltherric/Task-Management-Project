@@ -10,7 +10,25 @@ const createProject = async (projectData) => {
     return response.data;
 }
 
+const inviteProjectMember = async (projectId, userId) => {
+    const response = await API.post(`/projects/${projectId}/members`, { userId });
+    return response.data;
+}
+
+const removeProjectMember = async (projectId, userId) => {
+    const response = await API.delete(`/projects/${projectId}/members/${userId}`);
+    return response.data;
+}
+
+const updateProject = async (projectId, projectData) => {
+    const response = await API.put(`/projects/${projectId}`, projectData);
+    return response.data;
+}
+
 export {
     getProjects,
-    createProject
+    createProject,
+    inviteProjectMember,
+    removeProjectMember,
+    updateProject
 }

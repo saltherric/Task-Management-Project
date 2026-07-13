@@ -6,6 +6,8 @@ const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
   const socketRef = useRef(null);
+  const workspaceRoomRefs = useRef(new Map());
+  const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
@@ -17,6 +19,8 @@ export function SocketProvider({ children }) {
         socketRef.current.removeAllListeners();
         socketRef.current.disconnect();
         socketRef.current = null;
+        workspaceRoomRefs.current.clear();
+        setSocket(null);
         setIsConnected(false);
       }
 
@@ -29,29 +33,31 @@ export function SocketProvider({ children }) {
       socketRef.current.disconnect();
     }
 
-    const socket = createSocketConnection(token);
+    const nextSocket = createSocketConnection(token);
 
-    socketRef.current = socket;
+    socketRef.current = nextSocket;
+    workspaceRoomRefs.current.clear();
+    setSocket(nextSocket);
 
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
+    nextSocket.on("connect", () => {
+      console.log("Socket connected:", nextSocket.id);
       setIsConnected(true);
     });
 
-    socket.on("disconnect", () => {
+    nextSocket.on("disconnect", () => {
       console.log("Socket disconnected");
       setIsConnected(false);
     });
 
-    socket.on("connect_error", (err) => {
+    nextSocket.on("connect_error", (err) => {
       console.error("Socket connection error:", err.message);
     });
 
-    socket.on("online_users", (users) => {
+    nextSocket.on("online_users", (users) => {
       setOnlineUsers(users);
     });
 
-    socket.connect();
+    nextSocket.connect();
   }, []);
 
   const disconnectSocket = useCallback(() => {
@@ -59,6 +65,8 @@ export function SocketProvider({ children }) {
       socketRef.current.removeAllListeners();
       socketRef.current.disconnect();
       socketRef.current = null;
+      workspaceRoomRefs.current.clear();
+      setSocket(null);
       setIsConnected(false);
       setOnlineUsers([]);
     }
@@ -66,25 +74,59 @@ export function SocketProvider({ children }) {
 
   const joinWorkspace = useCallback((workspaceId) => {
     return new Promise((resolve) => {
-      if (!socketRef.current) {
+      const activeSocket = socketRef.current;
+      const roomKey = String(workspaceId || "");
+
+      if (!activeSocket || !roomKey) {
         resolve({ success: false, message: "Socket not connected" });
         return;
       }
 
-      socketRef.current.emit("workspace:join", { workspaceId }, (response) => {
+      const currentRefs = workspaceRoomRefs.current.get(roomKey) || 0;
+
+      if (currentRefs > 0) {
+        workspaceRoomRefs.current.set(roomKey, currentRefs + 1);
+        resolve({ success: true });
+        return;
+      }
+
+      workspaceRoomRefs.current.set(roomKey, 1);
+
+      activeSocket.emit("workspace:join", { workspaceId }, (response) => {
+        if (response?.success === false) {
+          workspaceRoomRefs.current.delete(roomKey);
+        }
+
         resolve(response || { success: false, message: "No response" });
       });
     });
   }, []);
 
   const leaveWorkspace = useCallback((workspaceId) => {
-    if (!socketRef.current) return;
-    socketRef.current.emit("workspace:leave", { workspaceId });
+    const activeSocket = socketRef.current;
+    const roomKey = String(workspaceId || "");
+
+    if (!activeSocket || !roomKey) return;
+
+    const currentRefs = workspaceRoomRefs.current.get(roomKey) || 0;
+
+    if (currentRefs > 1) {
+      workspaceRoomRefs.current.set(roomKey, currentRefs - 1);
+      return;
+    }
+
+    workspaceRoomRefs.current.delete(roomKey);
+    activeSocket.emit("workspace:leave", { workspaceId });
   }, []);
 
   useEffect(() => {
     // Connect immediately if token already exists (e.g. page refresh while logged in)
-    connectSocket();
+    let shouldConnect = true;
+    queueMicrotask(() => {
+      if (shouldConnect) {
+        connectSocket();
+      }
+    });
 
     // Listen for login/logout dispatched from other tabs (storage event)
     const handleStorageChange = (e) => {
@@ -103,6 +145,7 @@ export function SocketProvider({ children }) {
     window.addEventListener("auth-logout", disconnectSocket);
 
     return () => {
+      shouldConnect = false;
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("auth-login", connectSocket);
       window.removeEventListener("auth-logout", disconnectSocket);
@@ -111,7 +154,7 @@ export function SocketProvider({ children }) {
   }, [connectSocket, disconnectSocket]);
 
   const value = {
-    socket: socketRef.current,
+    socket,
     isConnected,
     onlineUsers,
     joinWorkspace,
@@ -125,6 +168,7 @@ export function SocketProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSocket() {
   const context = useContext(SocketContext);
   if (!context) {

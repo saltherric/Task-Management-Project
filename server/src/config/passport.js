@@ -34,7 +34,6 @@
 //                             provider: "google",
 //                             providerId: profile.id,
 //                         });
-//                         if (!user.emailVerified) user.emailVerified = true; // Google already verified it
 //                         await user.save();
 //                         return done(null, user);
 //                     }
@@ -46,7 +45,6 @@
 //                 user = await User.create({
 //                     username,
 //                     email: email || undefined, // avoid saving "undefined" string
-//                     emailVerified: !!email,
 //                     avatar: profile.photos?.[0]?.value || null,
 //                     authProviders: [
 //                         {

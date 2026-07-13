@@ -3,6 +3,7 @@ const Project = require("../models/Project");
 const Column = require("../models/Column");
 const taskService = require("../services/taskService");
 const { getTasks: getTasksService, updateTask: updateTaskService, deleteTask: deleteTaskService, moveTask: moveTaskService } = require("../services/taskService");
+const { getProjectForUser } = require("../services/projectAccessService");
 
 
 const createTask = async (req, res, next) => {
@@ -43,6 +44,7 @@ const getTaskById = async (req, res, next) => {
                 message: 'Task not found!'
             });
         }
+        await getProjectForUser({ projectId: task.project, userId: req.user._id });
         res.status(200).json(task);
     } catch (error) {
         next(error);

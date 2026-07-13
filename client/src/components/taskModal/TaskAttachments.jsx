@@ -130,8 +130,8 @@ export default function TaskAttachments({ taskId, updateField }) {
     <div className="space-y-4">
       {/* HEADER */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-          <i className="fa-solid fa-paperclip text-neutral-500 text-xs"></i>
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
+          <i className="fa-solid fa-paperclip text-slate-450 dark:text-neutral-500 text-xs"></i>
           <span>Attachments ({attachments.length})</span>
         </div>
 
@@ -150,7 +150,7 @@ export default function TaskAttachments({ taskId, updateField }) {
 
         <label
           htmlFor="fileUpload"
-          className="flex items-center gap-1.5 bg-[#17191E] hover:bg-[#23262D] border border-[#2D313A] px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-all cursor-pointer"
+          className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/80 dark:bg-[#17191E] dark:hover:bg-[#23262D] border border-slate-250 dark:border-[#2D313A] px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-650 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-all cursor-pointer"
         >
           <i className="fa-solid fa-plus text-xs"></i>
           <span>
@@ -161,7 +161,7 @@ export default function TaskAttachments({ taskId, updateField }) {
 
       {/* EMPTY STATE */}
       {attachments.length === 0 ? (
-        <div className="bg-[#111215] border border-dashed border-[#222429] rounded-2xl p-6 text-center text-xs text-neutral-500">
+        <div className="bg-slate-50 dark:bg-[#111215] border border-dashed border-slate-250 dark:border-[#222429] rounded-2xl p-6 text-center text-xs text-slate-500 dark:text-neutral-505">
           No attachments uploaded yet. Drag & drop or upload files to share
           schemas and designs.
         </div>
@@ -175,7 +175,7 @@ export default function TaskAttachments({ taskId, updateField }) {
             return (
               <div
                 key={attachment._id}
-                className="bg-[#14161B] border border-[#22242A] rounded-xl p-3.5 flex items-center justify-between gap-3 group hover:border-[#353945] transition-all hover:shadow-lg"
+                className="bg-slate-50 dark:bg-[#14161B] border border-slate-250 dark:border-[#22242A] rounded-xl p-3.5 flex items-center justify-between gap-3 group hover:border-slate-350 dark:hover:border-[#353945] transition-all hover:shadow-lg"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {isImage ? (
@@ -187,7 +187,7 @@ export default function TaskAttachments({ taskId, updateField }) {
                       />
                     </div>
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-[#22252F] border border-neutral-700/50 flex items-center justify-center font-bold text-xs text-indigo-400">
+                    <div className="w-10 h-10 rounded-lg bg-slate-250 dark:bg-[#22252F] border border-slate-300 dark:border-neutral-700/50 flex items-center justify-center font-bold text-xs text-indigo-650 dark:text-indigo-400">
                       {attachment.fileName
                         ?.split('.')
                         .pop()
@@ -196,11 +196,11 @@ export default function TaskAttachments({ taskId, updateField }) {
                   )}
 
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-neutral-200 truncate">
+                    <p className="text-xs font-bold text-slate-800 dark:text-neutral-200 truncate">
                       {attachment.fileName}
                     </p>
 
-                    <p className="text-[10px] text-neutral-500">
+                    <p className="text-[10px] text-slate-450 dark:text-neutral-500">
                       {formatFileSize(attachment.size)} •{' '}
                       {new Date(
                         attachment.createdAt
@@ -219,7 +219,7 @@ export default function TaskAttachments({ taskId, updateField }) {
                           }
                         }
                       }
-                      className="p-1.5 hover:bg-[#232733] rounded text-neutral-400 hover:text-neutral-200 transition-colors"
+                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-[#232733] rounded text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-200 transition-colors"
                       title="Preview"
                     >
                       <i className="fa-regular fa-eye text-xs"></i>
@@ -230,7 +230,7 @@ export default function TaskAttachments({ taskId, updateField }) {
                     onClick={() =>
                       handleDownload(attachment._id)
                     }
-                    className="p-1.5 hover:bg-[#232733] rounded text-neutral-400 hover:text-emerald-400 transition-colors"
+                    className="p-1.5 hover:bg-slate-200 dark:hover:bg-[#232733] rounded text-slate-500 dark:text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     title="Download"
                   >
                     <i className="fa-solid fa-download text-xs"></i>
@@ -240,7 +240,7 @@ export default function TaskAttachments({ taskId, updateField }) {
                     onClick={() =>
                       handleDelete(attachment._id)
                     }
-                    className="p-1.5 hover:bg-rose-500/15 rounded text-neutral-500 hover:text-rose-400 transition-colors"
+                    className="p-1.5 hover:bg-rose-500/10 rounded text-slate-450 dark:text-neutral-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
                     title="Delete"
                   >
                     <i className="fa-solid fa-trash-can text-xs"></i>

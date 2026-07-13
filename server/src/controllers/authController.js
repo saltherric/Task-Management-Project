@@ -1,4 +1,4 @@
-const { generateToken, registerUserService, loginUserService, resendVerificationEmailService, verifyEmailService, googleLoginService  } = require("../services/authService");
+const { registerUserService, loginUserService, googleLoginService  } = require("../services/authService");
 
 const registerUser = async (req, res, next) => {
     try {
@@ -15,24 +15,6 @@ const loginUser = async (req, res, next) => {
         res.json(user);
     } catch (error) {
         next(error)
-    }
-};
-
-const reverify = async (req, res, next) => {
-    try {
-        const result = await resendVerificationEmailService(req.body);
-        res.status(200).json(result);
-    } catch (error) {
-        next(error);
-    }
-};
-
-const verifyEmail = async (req, res, next) => {
-    try {
-        const result = await verifyEmailService(req.query);
-        res.status(200).json(result);
-    } catch (error) {
-        next(error);
     }
 };
 
@@ -58,7 +40,5 @@ const googleCallback = async (req, res, next) => {
 module.exports = {
     registerUser,
     loginUser,
-    reverify,
-    verifyEmail,
     googleCallback,
 };

@@ -4,26 +4,31 @@ const Workspace = require("../models/Workspace");
 const { createNotification } = require("./notificationService");
 const User = require("../models/User");
 const { emitToWorkspace } = require("../socket/socketGateway");
+const { getProjectForUser } = require("./projectAccessService");
 
-const getAvailableAssignees = async (taskId) => {
+const getAvailableAssignees = async (taskId, currentUserId) => {
     const task = await Task.findById(taskId);
     if (!task) {
         throw new Error("Task not found");
     }
     
-    const project = await Project.findById(task.project);
-    if (!project) {
-        throw new Error("Project not found");
-    }
+    const project = await getProjectForUser({ projectId: task.project, userId: currentUserId });
 
     const workspace = await Workspace.findById(project.workspace)
         .populate(
             "members.user", "username email"
         );
     
-    return workspace.members.map(
-        member => member.user
-    );
+    if (project.visibility === "private") {
+        const allowedIds = new Set([
+            project.createdBy.toString(),
+            ...(project.members || []).map((member) => member.user.toString()),
+        ]);
+        return workspace.members
+            .map((member) => member.user)
+            .filter((member) => member && allowedIds.has(member._id.toString()));
+    }
+    return workspace.members.map((member) => member.user);
 };
 
 const assignUser = async ({ taskId, userId, currentUserId }) => {
@@ -33,11 +38,7 @@ const assignUser = async ({ taskId, userId, currentUserId }) => {
         throw new Error("Task not found");
     }
 
-    const project = await Project.findById(task.project);
-
-    if (!project) {
-        throw new Error("Project not found");
-    }
+    const project = await getProjectForUser({ projectId: task.project, userId: currentUserId });
 
     const workspace = await Workspace.findById(project.workspace);
 
@@ -51,6 +52,13 @@ const assignUser = async ({ taskId, userId, currentUserId }) => {
 
     if (!isWorkspaceMember) {
         throw new Error("User is not a workspace member");
+    }
+    if (
+        project.visibility === "private" &&
+        project.createdBy.toString() !== userId.toString() &&
+        !(project.members || []).some((member) => member.user.toString() === userId.toString())
+    ) {
+        throw new Error("User does not have access to this private project");
     }
 
     await Task.findByIdAndUpdate(
@@ -101,7 +109,8 @@ const assignUser = async ({ taskId, userId, currentUserId }) => {
 
 const removeAssignee = async ({ taskId, userId, currentUserId }) => {
     const task = await Task.findById(taskId);
-    const project = await Project.findById(task.project);
+    if (!task) throw new Error("Task not found");
+    const project = await getProjectForUser({ projectId: task.project, userId: currentUserId });
     const workspace = await Workspace.findById(project.workspace);
     const updatedTask = await Task.findByIdAndUpdate(
       taskId,

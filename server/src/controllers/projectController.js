@@ -1,6 +1,12 @@
-const { response } = require("express");
 const Workspace = require("../models/Workspace");
-const { createProject: createProjectService, getProjects: getProjectsService} = require("../services/projectService");
+const { emitToWorkspace } = require("../socket/socketGateway");
+const { 
+  createProject: createProjectService, 
+  getProjects: getProjectsService,
+  inviteProjectMember: inviteProjectMemberService,
+  removeProjectMember: removeProjectMemberService,
+  updateProject: updateProjectService
+} = require("../services/projectService");
 
 const createProject = async (req, res, next) => {
   try {
@@ -8,6 +14,7 @@ const createProject = async (req, res, next) => {
       projectData: req.body,
       user: req.user,
     });
+    emitToWorkspace(project.workspace, "project:updated", { project });
     res.status(201).json({
       success: true,
       project,
@@ -32,4 +39,52 @@ const getProjects = async (req, res, next) => {
   }
 }
 
-module.exports = { createProject, getProjects};
+const inviteProjectMember = async (req, res, next) => {
+  try {
+    const project = await inviteProjectMemberService({
+      projectId: req.params.projectId,
+      userId: req.body.userId,
+      requesterId: req.user._id,
+    });
+    emitToWorkspace(project.workspace, "project:updated", { project });
+    res.status(200).json({ success: true, project });
+  } catch (error) { 
+    next(error); 
+  }
+};
+
+const removeProjectMember = async (req, res, next) => {
+  try {
+    const project = await removeProjectMemberService({
+      projectId: req.params.projectId,
+      userId: req.params.userId,
+      requesterId: req.user._id,
+    });
+    emitToWorkspace(project.workspace, "project:updated", { project });
+    res.status(200).json({ success: true, project });
+  } catch (error) { 
+    next(error); 
+  }
+};
+
+const updateProject = async (req, res, next) => {
+  try {
+    const project = await updateProjectService({
+      projectId: req.params.projectId,
+      projectData: req.body,
+      user: req.user,
+    });
+    emitToWorkspace(project.workspace, "project:updated", { project });
+    res.status(200).json({ success: true, project });
+  } catch (error) { 
+    next(error); 
+  }
+};
+
+module.exports = { 
+  createProject, 
+  getProjects, 
+  inviteProjectMember, 
+  removeProjectMember, 
+  updateProject 
+};

@@ -28,6 +28,16 @@ const getWorkspaceMembers = async (workspaceId) => {
     return response.data;
 }
 
+const updateWorkspace = async (workspaceId, workspaceData) => {
+    const response = await API.put(`/workspaces/${workspaceId}`, workspaceData);
+    return response.data;
+}
+
+const deleteWorkspace = async (workspaceId) => {
+    const response = await API.delete(`/workspaces/${workspaceId}`);
+    return response.data;
+}
+
 const getAvailableMembers = async (workspaceId) => {
     const response = await API.get(`/workspaces/${workspaceId}/availableMembers`);
     return response.data;
@@ -56,6 +66,8 @@ const leaveWorkspace = async (workspaceId) => {
 export{
     getWorkspaces,
     createWorkspace,
+    updateWorkspace,
+    deleteWorkspace,
     getTags,
     createTag,
     getWorkspaceMembers,

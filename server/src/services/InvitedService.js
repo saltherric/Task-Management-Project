@@ -19,6 +19,55 @@ const getWorkspaceMembers = async ({workspaceId}) => {
         }));
 };
 
+const updateWorkspace = async ({ workspaceId, workspaceData, user }) => {
+    const workspace = await Workspace.findById(workspaceId);
+
+    if (!workspace) {
+        throw new Error("Workspace not found");
+    }
+
+    const currentMember = workspace.members.find(
+        (member) => member.user.toString() === user._id.toString()
+    );
+
+    if (!currentMember || currentMember.role !== "admin") {
+        throw new Error("Only workspace admins can update the workspace");
+    }
+
+    // Only allow specific fields to be updated
+    const allowedFields = ["name", "description"];
+
+    allowedFields.forEach((field) => {
+        if (workspaceData[field] !== undefined) {
+            workspace[field] = workspaceData[field];
+        }
+    });
+
+    await workspace.save();
+
+    return workspace;
+};
+
+const deleteWorkspace = async ({ workspaceId, user }) => {
+    const workspace = await Workspace.findById(workspaceId);
+
+    if (!workspace) {
+        throw new Error("Workspace not found");
+    }
+
+    const currentMember = workspace.members.find(
+        (member) => member.user.toString() === user._id.toString()
+    );
+
+    if (!currentMember || currentMember.role !== "admin") {
+        throw new Error("Only workspace admins can delete this workspace");
+    }
+
+    await Workspace.findByIdAndDelete(workspaceId);
+
+    return true;
+};
+
 const getAvailableMembers = async ({workspaceId}) => {
     const workspace = await Workspace.findById(workspaceId)
         .select("members.user")
@@ -142,6 +191,8 @@ const leaveWorkspace = async ({ workspaceId, userId }) => {
 module.exports = {
     getWorkspaceMembers,
     getAvailableMembers,
+    updateWorkspace,
+    deleteWorkspace,
     invitesMember,
     updateMemberRole,
     leaveWorkspace

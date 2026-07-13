@@ -27,13 +27,13 @@ export default function TaskBadge({
   const getSaveStatusColor = () => {
     switch (saveStatus) {
       case "saving":
-        return "text-yellow-400";
+        return "text-yellow-600 dark:text-yellow-400";
       case "saved":
-        return "text-emerald-400";
+        return "text-emerald-600 dark:text-emerald-400";
       case "error":
-        return "text-red-400";
+        return "text-rose-600 dark:text-red-400";
       default:
-        return "text-neutral-400";
+        return "text-slate-500 dark:text-neutral-450";
     }
   };
 
@@ -74,17 +74,17 @@ export default function TaskBadge({
     }
   };
   return (
-    <div className="px-6 py-3 border-b border-[#1A1C20] bg-[#111215] flex items-center justify-between">
+    <div className="px-6 py-3 border-b border-slate-200 dark:border-[#1A1C20] bg-slate-50 dark:bg-[#111215] flex items-center justify-between">
 
       {/* Left Side */}
       <div className="flex items-center gap-3">
         <span
-          className={`flex items-center gap-1.5 text-xs bg-[#191B1F] py-1 px-2.5 rounded-md border border-[#242831] ${getSaveStatusColor()}`}
+          className={`flex items-center gap-1.5 text-xs bg-slate-100 dark:bg-[#191B1F] py-1 px-2.5 rounded-md border border-slate-200 dark:border-[#242831] ${getSaveStatusColor()}`}
         >
           {getSaveStatusText()}
         </span>
 
-        <span className="hidden sm:inline text-xs text-neutral-500">
+        <span className="hidden sm:inline text-xs text-slate-450 dark:text-neutral-500">
           • Auto-saving enabled
         </span>
       </div>
@@ -103,8 +103,8 @@ export default function TaskBadge({
           }}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
             task.isArchived
-              ? "bg-amber-500/15 border border-amber-500/30 text-amber-300"
-              : "text-neutral-400 hover:text-neutral-100 hover:bg-[#1E2026]"
+              ? "bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-300"
+              : "text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-100 hover:bg-slate-200/50 dark:hover:bg-[#1E2026]"
           }`}
         >
           <i className="fa-solid fa-box-archive" />
@@ -119,19 +119,19 @@ export default function TaskBadge({
         {/* Delete */}
         <button
           onClick={onTaskDelete}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs font-semibold transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 dark:text-neutral-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs font-semibold transition-all"
         >
           <span className="hidden md:inline">
             <i className="fa-solid fa-trash"></i> Delete
           </span>
         </button>
 
-        <div className="h-5 w-px bg-[#222429] mx-2" />
+        <div className="h-5 w-px bg-slate-200 dark:bg-[#222429] mx-2" />
 
         {/* Close */}
         <button
           onClick={onClose}
-          className="p-1.5 text-neutral-400 hover:text-neutral-100 hover:bg-[#1E2026] rounded-lg transition-all"
+          className="p-1.5 text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-100 hover:bg-slate-200/50 dark:hover:bg-[#1E2026] rounded-lg transition-all"
         >
           X
         </button>

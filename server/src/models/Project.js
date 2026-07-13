@@ -25,6 +25,27 @@ const projectSchema = new mongoose.Schema(
       required: true,
    },
 
+   // These users are the only workspace members, besides the creator, who can
+   // open a private project. Workspace-visible projects ignore this list.
+   members: [
+      {
+         user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+         },
+         invitedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+         },
+         joinedAt: {
+            type: Date,
+            default: Date.now,
+         },
+      },
+   ],
+
    visibility: {
       type: String,
       enum: ['private', 'workspace'],

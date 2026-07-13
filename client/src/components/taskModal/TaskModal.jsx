@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { ThemeContext } from "../../contexts/ThemeContext";
 
 import TaskBadge from "./TaskBadge";
 import TaskHeader from "./TaskHeader";
@@ -19,6 +20,8 @@ export default function TaskModal({
   onUpdateTask,
   onDeleteTask
 }) {
+  const { theme } = useContext(ThemeContext);
+  const isDark = theme === "dark";
   const [localTask, setLocalTask] = useState(task);
   const [dirtyFields, setDirtyFields] = useState({});
   const [saveStatus, setSaveStatus] = useState("saved");
@@ -101,7 +104,9 @@ export default function TaskModal({
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
 
-      <div className="bg-slate-900 h-[90vh] w-[95vw] max-w-7xl rounded-xl overflow-hidden flex flex-col">
+      <div className={`h-[90vh] w-[95vw] max-w-7xl rounded-xl overflow-hidden flex flex-col transition-colors duration-300 ${
+        isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-800 border border-slate-200 shadow-2xl"
+      }`}>
 
         {/* Top Area */}
         <TaskBadge
@@ -141,7 +146,9 @@ export default function TaskModal({
           </div>
 
           {/* Sidebar */}
-          <aside className="border-l border-slate-800 overflow-y-auto p-5 space-y-6">
+          <aside className={`border-l overflow-y-auto p-5 space-y-6 transition-colors duration-300 ${
+            isDark ? "border-slate-800" : "border-slate-200"
+          }`}>
 
             <TaskAssignedTo
               task={localTask}

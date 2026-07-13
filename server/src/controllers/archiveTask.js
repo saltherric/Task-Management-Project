@@ -19,7 +19,8 @@ const archiveTask = async (req, res, next) => {
 const unarchiveTask = async (req, res, next) => {
     try {
         const task = await taskService.unarchiveTask(
-            req.params.id
+            req.params.id,
+            req.user._id
         );
         res.status(200).json({
             success: true,
@@ -33,11 +34,12 @@ const unarchiveTask = async (req, res, next) => {
 const getArchivedTasks = async (req, res, next) => {
     try {
         const tasks = await taskService.getArchivedTasks(
-            req.params.projectId
+            req.params.projectId,
+            req.user._id
         );
         res.status(200).json({
             success: true,
-            task
+            tasks
         });
     } catch (error) {
         next(error)

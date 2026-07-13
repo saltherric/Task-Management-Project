@@ -17,15 +17,15 @@ export default function TaskDueDate({
 
   return (
     <div className="space-y-2">
-        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider font-mono">
+        <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-500 uppercase tracking-wider font-mono">
             Due Date
         </span>
 
         <div className="relative">
-            <div className={`flex items-center bg-[#111215] rounded-xl p-2.5 border ${
+            <div className={`flex items-center bg-slate-50 dark:bg-[#111215] rounded-xl p-2.5 border border-slate-200 dark:border-slate-800 ${
                 isOverdue 
-                    ?"text-red-400"
-                    : "text-neutral-400"
+                    ?"text-red-500 dark:text-red-400"
+                    : "text-slate-500 dark:text-neutral-400"
                 }`}
             >
             <input
@@ -37,7 +37,7 @@ export default function TaskDueDate({
                         e.target.value
                     )
                 }
-                className="bg-transparent text-xs text-neutral-200 focus:outline-none w-full [color-scheme:dark]"
+                className="bg-transparent text-xs text-slate-800 dark:text-neutral-200 focus:outline-none w-full dark:[color-scheme:dark]"
             />
             </div>
             {isOverdue && (

@@ -25,7 +25,7 @@ export default function ToolbarButton({
         ${
           active
             ? "bg-blue-600 text-white shadow-md"
-            : "text-neutral-300 hover:bg-[#252834] hover:text-white disabled:hover:bg-transparent disabled:hover:text-neutral-300"
+            : "text-slate-600 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-[#252834] hover:text-slate-900 dark:hover:text-white disabled:hover:bg-transparent disabled:hover:text-slate-600 dark:disabled:hover:text-neutral-300"
         }
       `}
     >

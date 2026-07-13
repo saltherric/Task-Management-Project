@@ -1,28 +1,14 @@
 import { useEffect, useState } from "react";
-import {
-  useNavigate,
-  useParams,
-  useLocation,
-} from "react-router-dom";
-
-import {
-  validateInvite,
-  joinWorkspace,
-} from "../services/inviteApi";
-
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { validateInvite, joinWorkspace } from "../services/inviteApi";
 import { getAuthState } from "../helpers/auth";
-
-const { isAuthenticated } = getAuthState();
 
 export default function InvitePage() {
   const { token } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ===========================
-  // STATES
-  // ===========================
-
+  const { isAuthenticated } = getAuthState();
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
 
@@ -34,10 +20,6 @@ export default function InvitePage() {
   const [alreadyMember, setAlreadyMember] = useState(false);
 
   const [joinSuccess, setJoinSuccess] = useState(false);
-
-  // ===========================
-  // FETCH INVITE
-  // ===========================
 
   useEffect(() => {
     if (!token) return;
@@ -81,7 +63,7 @@ export default function InvitePage() {
   const handleLogin = () => {
     navigate("/login", {
       state: {
-        redirectTo: location.pathname,
+        redirectTo: location.pathname + location.search
       },
     });
   };
@@ -107,7 +89,7 @@ export default function InvitePage() {
       if (error.response?.status === 401) {
         navigate("/login", {
           state: {
-            redirectTo: location.pathname,
+            redirectTo: location.pathname + location.search
           },
         });
 
@@ -125,6 +107,7 @@ export default function InvitePage() {
       setJoining(false);
     }
   };
+
 
   if (loading) {
     return (

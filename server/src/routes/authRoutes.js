@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { registerUser, loginUser, reverify, verifyEmail } = require('../controllers/authController');
+const { registerUser, loginUser } = require('../controllers/authController');
 const passport = require("passport");
 const { googleCallback } = require("../controllers/authController");
 
@@ -23,8 +23,6 @@ router.get(
 
 // Local 
 router.post("/register", registerUser);
-router.post("/resend-verification", reverify);
 router.post("/login", loginUser);
-router.get("/verify-email", verifyEmail);
 
 module.exports = router;

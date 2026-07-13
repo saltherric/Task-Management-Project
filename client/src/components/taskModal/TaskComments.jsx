@@ -76,26 +76,26 @@ export default function TaskComments({ taskId, updateField }) {
   };
 
   return (
-    <div className="space-y-4 pt-4 border-t border-[#1C1D22]">
-      <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-        <i className="fa-regular fa-comment-dots text-neutral-500 text-xs"></i>
+    <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-[#1C1D22]">
+      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
+        <i className="fa-regular fa-comment-dots text-slate-450 dark:text-neutral-500 text-xs"></i>
         <span>Comments & Discussion ({comments.length})</span>
       </div>
 
       <div className="notif-scroll space-y-3 max-h-[350px] overflow-y-auto pr-1">
         {loading ? (
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-slate-500 dark:text-neutral-500">
             Loading comments...
           </p>
         ) : comments.length === 0 ? (
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-slate-500 dark:text-neutral-500">
             No comments yet.
           </p>
         ) : (
           comments.map((comment) => (
             <div
               key={comment._id}
-              className="bg-[#111215] border border-[#1C1F26] rounded-2xl p-4 space-y-2"
+              className="bg-slate-50 dark:bg-[#111215] border border-slate-200 dark:border-[#1C1F26] rounded-2xl p-4 space-y-2"
             >
               <div className="flex items-center gap-2.5">
                 <img
@@ -107,18 +107,18 @@ export default function TaskComments({ taskId, updateField }) {
                   className="w-6 h-6 rounded-full object-cover"
                 />
 
-                <span className="text-xs font-bold text-neutral-200">
+                <span className="text-xs font-bold text-slate-800 dark:text-neutral-200">
                   {comment.user?.username}
                 </span>
 
-                <span className="text-[10px] text-neutral-500">
+                <span className="text-[10px] text-slate-450 dark:text-neutral-500">
                   {new Date(
                     comment.createdAt
                   ).toLocaleString()}
                 </span>
               </div>
 
-              <p className="text-xs text-neutral-300 leading-relaxed pl-8">
+              <p className="text-xs text-slate-700 dark:text-neutral-300 leading-relaxed pl-8">
                 {comment.content}
               </p>
             </div>
@@ -126,69 +126,69 @@ export default function TaskComments({ taskId, updateField }) {
         )}
       </div>
       <form
-  onSubmit={handleAddComment}
-  className="mt-4 bg-[#111215] border border-[#21242E] rounded-2xl p-3 relative"
->
-  <div className="relative">
-    <textarea
-      value={commentText}
-      onChange={(e) => setCommentText(e.target.value)}
-      placeholder="Post a comment..."
-      className="w-full bg-transparent text-xs text-neutral-200 focus:outline-none resize-none min-h-[55px] leading-relaxed"
-    />
-  </div>
-
-  <div className="flex items-center justify-between pt-2 border-t border-[#1C1F2A] mt-2">
-    <div className="flex items-center gap-1.5">
-      <button
-        type="button"
-        onClick={() =>
-          setCommentText((prev) => prev + " 👍")
-        }
-        className="p-1 hover:bg-[#1C2029] rounded text-neutral-400 hover:text-amber-400 transition-colors"
-        title="Add reaction"
+        onSubmit={handleAddComment}
+        className="mt-4 bg-slate-50 dark:bg-[#111215] border border-slate-200 dark:border-[#21242E] rounded-2xl p-3 relative"
       >
-        👍
-      </button>
+        <div className="relative">
+          <textarea
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Post a comment..."
+            className="w-full bg-transparent text-xs text-slate-800 dark:text-neutral-200 focus:outline-none resize-none min-h-[55px] leading-relaxed"
+          />
+        </div>
 
-      <button
-        type="button"
-        onClick={() =>
-          setCommentText((prev) => prev + " 🔥")
-        }
-        className="p-1 hover:bg-[#1C2029] rounded text-neutral-400 hover:text-red-400 transition-colors"
-        title="Add reaction"
-      >
-        🔥
-      </button>
-    </div>
+        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-[#1C1F2A] mt-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() =>
+                setCommentText((prev) => prev + " 👍")
+              }
+              className="p-1 hover:bg-slate-200 dark:hover:bg-[#1C2029] rounded text-slate-450 dark:text-neutral-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
+              title="Add reaction"
+            >
+              👍
+            </button>
 
-    <button
-      type="submit"
-      disabled={
-        !commentText.trim() || isPostingComment
-      }
-      className="
-        bg-indigo-600
-        hover:bg-indigo-500
-        disabled:opacity-40
-        disabled:cursor-not-allowed
-        text-white
-        text-xs
-        font-semibold
-        px-4
-        py-1.5
-        rounded-xl
-        shadow-lg
-        transition-all
-      "
-    >
-      {isPostingComment
-        ? "Posting..."
-        : "Post Comment"}
-    </button>
-  </div>
-</form>
+            <button
+              type="button"
+              onClick={() =>
+                setCommentText((prev) => prev + " 🔥")
+              }
+              className="p-1 hover:bg-slate-200 dark:hover:bg-[#1C2029] rounded text-slate-450 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              title="Add reaction"
+            >
+              🔥
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={
+              !commentText.trim() || isPostingComment
+            }
+            className="
+              bg-indigo-600
+              hover:bg-indigo-500
+              disabled:opacity-40
+              disabled:cursor-not-allowed
+              text-white
+              text-xs
+              font-semibold
+              px-4
+              py-1.5
+              rounded-xl
+              shadow-lg
+              transition-all
+            "
+          >
+            {isPostingComment
+              ? "Posting..."
+              : "Post Comment"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

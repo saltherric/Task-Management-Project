@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Alert from '../components/alert';
 import API from '../services/api';
 import { Form, Input, Button, Checkbox } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined } from '@ant-design/icons';
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.redirectTo || '/home';
   // const dispatch = useDispatch();
-  const [alert, setAlert] = useState(null);
-
-
-  // Check for pending alert from previous page
-  useEffect(() => {
+  const [alert, setAlert] = useState(() => {
     const pendingAlert = localStorage.getItem('pendingAlert');
-    if (pendingAlert) {
-      setAlert(JSON.parse(pendingAlert));
-      localStorage.removeItem('pendingAlert');
-    }
-  }, []);
+    if (!pendingAlert) return null;
+
+    localStorage.removeItem('pendingAlert');
+    return JSON.parse(pendingAlert);
+  });
+
 
   useEffect(() => {
     if (!alert) return;
@@ -54,7 +53,7 @@ function Login() {
          JSON.stringify({ type: 'success', message: 'Logged in successfully.' })
        );
      
-       navigate('/home');
+       navigate(redirectTo, { replace: true });
       
     } catch (error) {
       console.log(error.response?.data);

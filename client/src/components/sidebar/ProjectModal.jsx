@@ -68,7 +68,7 @@ export default function ProjectModal({ isOpen, onClose, onCreate}) {
                         />
                     </div>
 
-                    {/* <div>
+                    <div>
                     <label className="block text-xs font-medium text-slate-400 mb-3">
                       Visibility
                     </label>
@@ -81,8 +81,8 @@ export default function ProjectModal({ isOpen, onClose, onCreate}) {
                             ? "border-indigo-500 bg-indigo-500/10"
                             : "border-slate-700 hover:border-slate-600"
                         }`}
-                      > */}
-          {/* <input
+                      >
+          <input
             type="radio"
             name="visibility"
             value="private"
@@ -112,8 +112,8 @@ export default function ProjectModal({ isOpen, onClose, onCreate}) {
               ? "border-indigo-500 bg-indigo-500/10"
               : "border-slate-700 hover:border-slate-600"
           }`}
-        > */}
-          {/* <input
+        >
+          <input
             type="radio"
             name="visibility"
             value="workspace"
@@ -125,20 +125,20 @@ export default function ProjectModal({ isOpen, onClose, onCreate}) {
               }))
             }
             className="hidden"
-          /> */}
+          />
 
-          {/* <div>
+          <div>
             <p className="text-sm font-semibold text-white">
               Workspace
             </p>
             <p className="text-xs text-slate-500 mt-1">
               Visible to all workspace members.
             </p>
-          </div> */}
-        {/* </label>
+          </div>
+        </label>
 
       </div>
-    </div> */}
+    </div>
 
       <div className="flex justify-end gap-2 pt-2">
           <button

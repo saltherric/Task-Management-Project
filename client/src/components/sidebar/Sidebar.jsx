@@ -7,11 +7,14 @@ import { useParams } from "react-router-dom";
 import WorkspaceModal from './WorkspaceModal';
 import ProjectModal from './ProjectModal';
 import InviteModal from './InviteModal';
+import SettingModal from './SettingModal';
+import { Lock, Globe } from 'lucide-react';
+import { useSocket } from '../../contexts/SocketContext';
+import { getStoredUserInfo } from '../../helpers/auth';
 
 function Sidebar() {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
-  const [activeView, setActiveView] = useState('Board');
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const dropdownRef = useRef(null);
   const [workspaces, setWorkspaces] = useState([]);
@@ -19,9 +22,56 @@ function Sidebar() {
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSettingModal, setShowSettingModal] = useState(false);
   const navigate = useNavigate();
 
   const { workspaceId, projectId} = useParams();
+
+  const { socket, isConnected } = useSocket();
+  const currentUser = getStoredUserInfo();
+  const currentUserId = currentUser?._id || currentUser?.id;
+
+  useEffect(() => {
+    if (!socket || !isConnected || !workspaceId) return;
+
+    const handleProjectUpdatedSocket = (payload) => {
+      const updatedProject = payload.project;
+      if (!updatedProject) return;
+
+      // Make sure the project belongs to the current workspace
+      const projWorkspaceId = updatedProject.workspace?._id || updatedProject.workspace;
+      if (String(projWorkspaceId) !== String(workspaceId)) return;
+
+      // Check if current user is allowed to see the project
+      const isMember = (updatedProject.members || []).some((m) => {
+        const mId = m.user?._id || m.user?.id || m.user;
+        return String(mId) === String(currentUserId);
+      });
+      const isCreator = String(updatedProject.createdBy?._id || updatedProject.createdBy) === String(currentUserId);
+      const isWorkspaceVisible = updatedProject.visibility === 'workspace';
+
+      if (isCreator || isWorkspaceVisible || isMember) {
+        // User has access, update or prepend the list
+        setProjects((prev) => {
+          const exists = prev.some((p) => p._id === updatedProject._id);
+          if (exists) {
+            return prev.map((p) => (p._id === updatedProject._id ? updatedProject : p));
+          } else {
+            return [updatedProject, ...prev];
+          }
+        });
+      } else {
+        // Access revoked (e.g. removed from members list), filter it out
+        setProjects((prev) => prev.filter((p) => p._id !== updatedProject._id));
+      }
+    };
+
+    socket.on("project:updated", handleProjectUpdatedSocket);
+
+    return () => {
+      socket.off("project:updated", handleProjectUpdatedSocket);
+    };
+  }, [socket, isConnected, workspaceId, currentUserId]);
   
   useEffect(() => {
     function handleClickOutside(event) {
@@ -50,6 +100,17 @@ function Sidebar() {
 
   const activeWorkspace = workspaces.find(ws => ws._id === workspaceId) || { name: "Select Workspace" };
 
+  const handleWorkspaceUpdated = (updatedWorkspace) => {
+    setWorkspaces((prev) =>
+      prev.map((ws) => (ws._id === updatedWorkspace._id ? updatedWorkspace : ws))
+    );
+  };
+
+  const handleWorkspaceDeleted = (deletedWorkspaceId) => {
+    setWorkspaces((prev) => prev.filter((ws) => ws._id !== deletedWorkspaceId));
+    navigate("/home");
+  };
+
   useEffect(() => {
     if (
         workspaces.length > 0 &&
@@ -62,11 +123,29 @@ function Sidebar() {
   }, [workspaces, workspaceId, navigate]);
 
   const navItems = [
-    // { label: 'Dashboard', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg> },
-    { label: 'Board', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg> },
-    // { label: 'Analytics', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.003 9.003 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg> },
-    // { label: 'Activity', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
-    // { label: 'Settings', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+    { 
+      label: 'Dashboard', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
+      onClick: () => {
+        if (workspaceId) {
+          navigate(`/workspaces/${workspaceId}`);
+        }
+      },
+      active: !projectId
+    },
+    { 
+      label: 'Board', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>,
+      onClick: () => {
+        if (workspaceId) {
+          if (projectId) return;
+          if (projects && projects.length > 0) {
+            navigate(`/workspaces/${workspaceId}/projects/${projects[0]._id}`);
+          }
+        }
+      },
+      active: !!projectId
+    },
   ];
 
   const [projects, setProjects] = useState([]);
@@ -244,10 +323,23 @@ function Sidebar() {
               onClose={() => setShowInviteModal(false)}
             />
 
+            <SettingModal
+              isOpen={showSettingModal}
+              workspaceId={workspaceId}
+              workspace={activeWorkspace}
+              onClose={() => setShowSettingModal(false)}
+              onWorkspaceUpdated={handleWorkspaceUpdated}
+              onWorkspaceDeleted={handleWorkspaceDeleted}
+            />
+
             <div className={`w-px h-5 shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-            <button className={`w-[40px] h-[32px] flex items-center justify-center rounded-lg transition-colors ${
-              isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-            }`}>
+            <button 
+              onClick={() => setShowSettingModal(true)}
+              className={`w-[40px] h-[32px] flex items-center justify-center rounded-lg transition-colors ${
+                isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              }`}
+              title="Workspace Settings"
+            >
               <svg className="w-4.5 h-4.5 pr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -262,12 +354,12 @@ function Sidebar() {
         {/* ── Nav items ── */}
         <div className="space-y-1">
           {navItems.map((item) => {
-            const isActive = activeView === item.label;
+            const isActive = item.active;
             return (
               <button
                 key={item.label}
                 type="button"
-                onClick={() => setActiveView(item.label)}
+                onClick={item.onClick}
                 className={`group relative flex w-full items-center gap-3.5 px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
                   isActive
                     ? isDark
@@ -353,8 +445,12 @@ function Sidebar() {
                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md'
                     }`}
                 >
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>{project.name}</span>
+                    {project.visibility === 'private' ? (
+                      <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0 animate-fade-in" title="Private Project" />
+                    ) : (
+                      <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0 animate-fade-in" title="Workspace Project" />
+                    )}
+                    <span className="truncate">{project.name}</span>
                 </div>                      
               ))}
             </div>

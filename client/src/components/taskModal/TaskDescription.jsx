@@ -9,7 +9,7 @@ export default function TaskDescription({
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
           <span className="h-1 w-2 bg-indigo-500 rounded-full"></span>
           <span>Description & Specs</span>
         </div>

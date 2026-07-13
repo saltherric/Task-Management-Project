@@ -1,6 +1,7 @@
 const Project = require('../models/Project');
 const Column = require('../models/Column');
 const Workspace = require('../models/Workspace');
+const { getProjectForUser } = require("../services/projectAccessService");
 
 const taskMiddleware = async ( req, res, next) => {
    try {
@@ -12,12 +13,7 @@ const taskMiddleware = async ( req, res, next) => {
         });
     }
 
-    const proj = await Project.findById(project);
-    if(!proj){
-        return res.status(404).json({
-            message: 'Project not found'
-        });
-    }
+    const proj = await getProjectForUser({ projectId: project, userId: req.user._id });
 
     const col = await Column.findById(column);
     if(!col){

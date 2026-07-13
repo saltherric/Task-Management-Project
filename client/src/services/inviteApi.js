@@ -1,13 +1,13 @@
 import API from "./api";
 
 export const createInviteLink = async (workspaceId, role) => {
-    const res = await API.post(
-      `/workspaces/${workspaceId}/invite-link`, {
-        role,
-      }
-    );
+  const res = await API.post(
+    `/workspaces/${workspaceId}/invite-link`, {
+      role,
+    }
+  );
 
-    return res.data;
+  return res.data;
 };
 
 export const validateInvite = async (token) => {
