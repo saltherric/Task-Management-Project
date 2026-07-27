@@ -5,7 +5,7 @@ const workspaceMiddleware = async (req, res, next) => {
   try {
   if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
 
-  const workspace = req.body.workspace || req.params.workspace || req.query.workspace;
+  const workspace = req.body?.workspace || req.params?.workspace || req.params?.workspaceId || req.query?.workspace;
     if (!workspace) {
         return res.status(400).json({ 
             message: 'Workspace is required' 
@@ -25,7 +25,7 @@ const workspaceMiddleware = async (req, res, next) => {
     }
 
     const isMember = existingWorkspace.members.some(
-        member => member.user.toString() === req.user._id.toString()
+        member => member.user && member.user.toString() === req.user._id.toString()
     );
     if (!isMember && req.user.role !== 'admin') {
         return res.status(403).json({ 

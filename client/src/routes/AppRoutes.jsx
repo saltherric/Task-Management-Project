@@ -6,6 +6,9 @@ import VerifyEmailPage from "../features/VerifyEmailPage";
 import ResendVerificationPage from "../features/ResendVerificationPage";
 import Dashboard from "../features/Dashboard";
 import InvitePage from "../features/InvitePage";
+import Analytics from "../features/Analytics";
+import Activity from "../features/Activity";
+import OAuthSuccessPage from "../features/OAuthSuccessPage";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 import MainLayout from "../components/layout/MainLayout";
@@ -23,6 +26,7 @@ function AppRoutes() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/api/auth/verify-email" element={<VerifyEmailPage />} />
         <Route path="/resend-verification" element={<ResendVerificationPage />} />
+        <Route path="/oauth-success" element={<OAuthSuccessPage />} />
 
         {/* Invite Route (Public) */}
         <Route
@@ -48,6 +52,16 @@ function AppRoutes() {
           <Route
             path="/workspaces/:workspaceId/projects/:projectId"
             element={<BoardView />}
+          />
+
+          <Route
+            path="/workspaces/:workspaceId/analytics"
+            element={<Analytics />}
+          />
+
+          <Route
+            path="/workspaces/:workspaceId/activity"
+            element={<Activity />}
           />
         </Route>
 

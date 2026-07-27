@@ -1,3 +1,4 @@
+
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
@@ -6,11 +7,14 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 // import 'antd/dist/reset.css'
 import ThemeProvider from './contexts/ThemeContext.jsx'
 import { SocketProvider } from "./contexts/SocketContext";
+import { AlertProvider } from './contexts/AlertContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <ThemeProvider>
     <SocketProvider>
-      <App />
+      <AlertProvider>
+        <App />
+      </AlertProvider>
     </SocketProvider>
   </ThemeProvider>,
 )

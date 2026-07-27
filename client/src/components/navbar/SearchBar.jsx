@@ -9,7 +9,7 @@ function SearchBar({
   isDark,
 }) {
   return (
-    <div ref={searchRef} className="relative flex-1 max-w-md mx-4 md:mx-8">
+    <div ref={searchRef} className="relative hidden sm:flex flex-1 max-w-md mx-4 md:mx-8">
         {/* Search Input */}
         <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">

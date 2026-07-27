@@ -13,7 +13,7 @@ import {
 } from '../../services/notificationService';
 import { connectTelegram } from '../../services/telegramApi';
 
-function Navbar() {
+function Navbar({ onMenuClick }) {
   const { theme, toggleTheme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
   const navigate = useNavigate();
@@ -265,17 +265,36 @@ function Navbar() {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           
-          {/* Brand Logo & Name */}
-          <div className="flex flex-shrink-0 items-center gap-2.5 cursor-pointer group">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 group-hover:scale-105 transition-all duration-200 ${isDark ? 'shadow-none' : 'shadow-md shadow-indigo-200'}`}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5 12L10 17L19 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M19 13V19M16 16H22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          {/* Menu & Logo */}
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={onMenuClick}
+              className={`p-1.5 rounded-xl lg:hidden transition-all duration-200 outline-none ${
+                isDark 
+                  ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' 
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              }`}
+              aria-label="Toggle sidebar menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
+            </button>
+
+            <div 
+              className="flex flex-shrink-0 items-center gap-2.5 cursor-pointer group"
+              onClick={() => navigate('/home')}
+            >
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 group-hover:scale-105 transition-all duration-200 ${isDark ? 'shadow-none' : 'shadow-md shadow-indigo-200'}`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 12L10 17L19 6" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19 13V19M16 16H22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span className={`text-xl font-bold tracking-tight bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-white via-indigo-200 to-white' : 'bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900'}`}>
+                TaskMe
+              </span>
             </div>
-            <span className={`text-xl font-bold tracking-tight bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-white via-indigo-200 to-white' : 'bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900'}`}>
-              TaskMe
-            </span>
           </div>
 
           {/* Interactive Modern Search Bar */}

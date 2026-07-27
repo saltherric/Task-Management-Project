@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Info, Globe, Lock, Archive, Copy, Trash2, ChevronLeft, Edit2 } from 'lucide-react';
+import { X, Users, Info, Globe, Lock, Archive, Copy, Trash2, ChevronLeft, Edit2, RotateCcw, Loader2 } from 'lucide-react';
 import useAutoSave from '../../hooks/useAutoSave';
 import { updateProject } from '../../services/projectApi';
+import { getArchivedTasksByProject, unArchiveTask, deleteTask } from '../../services/taskApi';
+import getColumnDotProps from '../../helpers/getDotColors';
+import { useAlert } from '../../contexts/AlertContext';
 
 export default function MenuModal({
     isOpen,
@@ -18,7 +21,7 @@ export default function MenuModal({
 }) {
     if (!isOpen || !project) return null;
 
-    const [currentView, setCurrentView] = useState('menu'); // 'menu' or 'about'
+    const [currentView, setCurrentView] = useState('menu'); // 'menu', 'about', or 'archived'
 
     // About Project Fields Local State
     const [name, setName] = useState(project.name || '');
@@ -31,6 +34,53 @@ export default function MenuModal({
     const [isEditingName, setIsEditingName] = useState(false);
     const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'saving', 'error'
     const [errorMsg, setErrorMsg] = useState('');
+    const { showAlert } = useAlert();
+
+    // Archived Tasks State
+    const [archivedTasks, setArchivedTasks] = useState([]);
+    const [loadingArchived, setLoadingArchived] = useState(false);
+
+    const fetchArchivedTasks = async () => {
+        setLoadingArchived(true);
+        try {
+            const data = await getArchivedTasksByProject(project._id);
+            setArchivedTasks(data.tasks || []);
+        } catch (error) {
+            console.error("Failed to fetch archived tasks:", error);
+        } finally {
+            setLoadingArchived(false);
+        }
+    };
+
+    useEffect(() => {
+        if (currentView === 'archived') {
+            fetchArchivedTasks();
+        }
+    }, [currentView, project._id]);
+
+    const handleRestoreTask = async (taskId) => {
+        try {
+            await unArchiveTask(taskId);
+            setArchivedTasks(prev => prev.filter(t => t._id !== taskId));
+            showAlert('Task restored successfully.', 'success');
+        } catch (error) {
+            console.error("Failed to unarchive task:", error);
+            showAlert(error.response?.data?.message || "Failed to unarchive task.", 'error');
+        }
+    };
+
+    const handleDeleteTask = async (taskId) => {
+        if (window.confirm("Are you sure you want to permanently delete this task? This action cannot be undone.")) {
+            try {
+                await deleteTask(taskId);
+                setArchivedTasks(prev => prev.filter(t => t._id !== taskId));
+                showAlert('Task deleted permanently.', 'success');
+            } catch (error) {
+                console.error("Failed to delete task:", error);
+                showAlert(error.response?.data?.message || "Failed to delete task.", 'error');
+            }
+        }
+    };
 
     // Sync state with project details when project or view changes
     useEffect(() => {
@@ -55,7 +105,9 @@ export default function MenuModal({
         } catch (err) {
             console.error('Failed to auto-save project updates:', err);
             setSaveStatus('error');
-            setErrorMsg(err.response?.data?.message || 'Failed to auto-save changes.');
+            const errorText = err.response?.data?.message || 'Failed to auto-save changes.';
+            setErrorMsg(errorText);
+            showAlert(errorText, 'error');
         }
     };
 
@@ -99,70 +151,71 @@ export default function MenuModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-end animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-black/15 backdrop-blur-[2px] flex justify-end animate-fade-in">
             {/* Backdrop click to close */}
             <div className="absolute inset-0" onClick={onClose} />
 
             {/* Drawer Panel */}
+            {/* Drawer Panel */}
             <div
                 className={`w-full max-w-[340px] h-full shadow-2xl flex flex-col border-l relative z-10 transition-all duration-300 translate-x-0 ${isDark
-                        ? 'bg-[#0f172a] border-slate-800 text-slate-100'
-                        : 'bg-[#f8fafc] border-slate-200 text-slate-800'
+                        ? 'bg-[#12141A] border-slate-800/80 text-slate-100'
+                        : 'bg-white border-slate-200 text-slate-800'
                     }`}
             >
                 {/* VIEW 1: MAIN MENU */}
                 {currentView === 'menu' && (
                     <>
                         {/* Header */}
-                        <div className={`flex items-center gap-3 px-5 py-4 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#1e293b]/20' : 'border-slate-200 bg-white'
+                        <div className={`flex items-center gap-3 px-5 py-4 border-b shrink-0 ${isDark ? 'border-slate-800/60 bg-slate-900/10' : 'border-slate-100 bg-slate-50/50'
                             }`}>
                             <button
                                 onClick={onClose}
-                                className={`p-1.5 rounded-xl transition-colors focus:outline-none ${isDark ? 'hover:bg-slate-800/60 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800'
+                                className={`p-1.5 rounded-xl transition-all hover:bg-slate-150/40 dark:hover:bg-slate-800/50 cursor-pointer ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-750'
                                     }`}
                                 aria-label="Close menu"
                             >
-                                <X className="w-4.5 h-4.5" />
+                                <X className="w-4 h-4" />
                             </button>
-                            <h2 className="text-base font-bold tracking-tight">Menu</h2>
+                            <h2 className="text-sm font-bold tracking-tight">Menu</h2>
                         </div>
 
                         {/* Content list */}
-                        <div className="flex-1 overflow-y-auto py-3 divide-y divide-slate-800/10 dark:divide-slate-800/40">
+                        <div className="flex-1 overflow-y-auto py-3 divide-y divide-slate-800/10 dark:divide-slate-850/50">
 
                             {/* Members */}
                             <div className="px-3 py-2">
                                 <button
                                     onClick={onManageMembers}
-                                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 text-left ${isDark
-                                            ? 'hover:bg-slate-800/40 text-slate-300 hover:text-white'
-                                            : 'hover:bg-white text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
+                                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 text-left cursor-pointer ${isDark
+                                            ? 'hover:bg-white/[0.04] text-slate-350 hover:text-white'
+                                            : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <Users className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
-                                        <span className="text-sm font-semibold">Members</span>
+                                        <Users className={`w-4 h-4 ${isDark ? 'text-slate-450' : 'text-slate-550'}`} />
+                                        <span className="text-xs font-semibold">Members</span>
                                     </div>
-                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-600'
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDark ? 'bg-slate-900 border border-slate-800 text-slate-450' : 'bg-slate-100 text-slate-650'
                                         }`}>
                                         {memberCount}
                                     </span>
                                 </button>
                             </div>
 
-                            {/* About this board/project */}
+                            {/* About this board/project */} 
                             <div className="px-3 py-2">
                                 <button
                                     onClick={() => setCurrentView('about')}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left ${isDark
-                                            ? 'hover:bg-slate-800/40 text-slate-300 hover:text-white'
-                                            : 'hover:bg-white text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
+                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left cursor-pointer ${isDark
+                                            ? 'hover:bg-white/[0.04] text-slate-350 hover:text-white'
+                                            : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
                                         }`}
                                 >
-                                    <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+                                    <Info className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-slate-450' : 'text-slate-550'}`} />
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="text-sm font-semibold">About this Project</h4>
-                                        <p className={`text-[11px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'
+                                        <h4 className="text-xs font-semibold">About this Project</h4>
+                                        <p className={`text-[10px] truncate mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-500'
                                             }`}>
                                             {description}
                                         </p>
@@ -175,28 +228,28 @@ export default function MenuModal({
                                 <div className="flex gap-3 p-3 items-start">
                                     <div className="mt-0.5">
                                         {visibility === 'private' ? (
-                                            <Lock className={`w-5 h-5 ${isDark ? 'text-amber-500' : 'text-amber-600'}`} />
+                                            <Lock className={`w-4 h-4 ${isDark ? 'text-amber-500' : 'text-amber-600'}`} />
                                         ) : (
-                                            <Globe className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+                                            <Globe className={`w-4 h-4 ${isDark ? 'text-slate-450' : 'text-slate-550'}`} />
                                         )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="text-sm font-semibold">Visibility</h4>
+                                        <h4 className="text-xs font-semibold">Visibility</h4>
 
                                         {/* Styled Dropdown Selector */}
                                         <div className="mt-2.5">
                                             <select
                                                 value={visibility}
                                                 onChange={(e) => onChangeVisibility(e.target.value)}
-                                                className={`w-full max-w-[180px] h-9 rounded-lg border text-xs font-semibold px-2.5 focus:outline-none cursor-pointer transition-all ${isDark
-                                                        ? 'border-slate-800 bg-[#0f172a] text-slate-200 focus:border-indigo-500'
-                                                        : 'border-slate-200 bg-white text-slate-700 focus:border-indigo-650'
+                                                className={`w-full max-w-[180px] h-9 rounded-xl border text-xs font-bold px-3 focus:outline-none cursor-pointer transition-all focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 ${isDark
+                                                        ? 'border-slate-800/80 bg-slate-900/40 text-slate-200 focus:bg-[#12141A]'
+                                                        : 'border-slate-200 bg-slate-50/50 text-slate-700 focus:bg-white'
                                                     }`}
                                             >
-                                                <option value="workspace" className={isDark ? 'bg-[#0f172a]' : 'bg-white'}>
-                                                    🏢 Workspace
+                                                <option value="workspace" className={isDark ? 'bg-[#12141A]' : 'bg-white'}>
+                                                    🌐 Workspace
                                                 </option>
-                                                <option value="private" className={isDark ? 'bg-[#0f172a]' : 'bg-white'}>
+                                                <option value="private" className={isDark ? 'bg-[#12141A]' : 'bg-white'}>
                                                     🔒 Private
                                                 </option>
                                             </select>
@@ -208,14 +261,14 @@ export default function MenuModal({
                             {/* Archived Items */}
                             <div className="px-3 py-2">
                                 <button
-                                    onClick={onViewArchived}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left ${isDark
-                                            ? 'hover:bg-slate-800/40 text-slate-300 hover:text-white'
-                                            : 'hover:bg-white text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
+                                    onClick={() => setCurrentView('archived')}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left cursor-pointer ${isDark
+                                            ? 'hover:bg-white/[0.04] text-slate-350 hover:text-white'
+                                            : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
                                         }`}
                                 >
-                                    <Archive className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
-                                    <span className="text-sm font-semibold">Archived items</span>
+                                    <Archive className={`w-4 h-4 ${isDark ? 'text-slate-450' : 'text-slate-550'}`} />
+                                    <span className="text-xs font-semibold">Archived items</span>
                                 </button>
                             </div>
 
@@ -223,13 +276,13 @@ export default function MenuModal({
                             <div className="px-3 py-2">
                                 <button
                                     onClick={onCopyBoard}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left ${isDark
-                                            ? 'hover:bg-slate-800/40 text-slate-300 hover:text-white'
-                                            : 'hover:bg-white text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
+                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left cursor-pointer ${isDark
+                                            ? 'hover:bg-white/[0.04] text-slate-350 hover:text-white'
+                                            : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
                                         }`}
                                 >
-                                    <Copy className={`w-5 h-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
-                                    <span className="text-sm font-semibold">Copy board</span>
+                                    <Copy className={`w-4 h-4 ${isDark ? 'text-slate-450' : 'text-slate-550'}`} />
+                                    <span className="text-xs font-semibold">Copy board</span>
                                 </button>
                             </div>
 
@@ -237,11 +290,13 @@ export default function MenuModal({
                             <div className="px-3 py-2">
                                 <button
                                     onClick={onDeleteProject}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left text-red-500 ${isDark ? 'hover:bg-red-500/10' : 'hover:bg-red-55'
+                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left cursor-pointer ${isDark
+                                            ? 'hover:bg-rose-500/10 text-rose-400 hover:text-rose-350'
+                                            : 'hover:bg-rose-50 border border-transparent hover:border-rose-100 text-rose-600'
                                         }`}
                                 >
-                                    <Trash2 className="w-5 h-5 shrink-0" />
-                                    <span className="text-sm font-bold">Delete project</span>
+                                    <Trash2 className="w-4 h-4 shrink-0" />
+                                    <span className="text-xs font-bold">Delete project</span>
                                 </button>
                             </div>
 
@@ -253,22 +308,22 @@ export default function MenuModal({
                 {currentView === 'about' && (
                     <>
                         {/* Header */}
-                        <div className={`flex items-center justify-between px-4 py-4 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#1e293b]/20' : 'border-slate-200 bg-white'
+                        <div className={`flex items-center justify-between px-4 py-4 border-b shrink-0 ${isDark ? 'border-slate-800/60 bg-slate-900/10' : 'border-slate-100 bg-slate-50/50'
                             }`}>
                             <div className="flex items-center gap-1">
                                 <button
                                     onClick={() => setCurrentView('menu')}
-                                    className={`p-1.5 rounded-xl transition-colors focus:outline-none ${isDark ? 'hover:bg-slate-800/60 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800'
+                                    className={`p-1.5 rounded-xl transition-all hover:bg-slate-150/40 dark:hover:bg-slate-800/50 cursor-pointer ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-750'
                                         }`}
                                     aria-label="Back to main menu"
                                 >
-                                    <ChevronLeft className="w-4.5 h-4.5" />
+                                    <ChevronLeft className="w-4 h-4" />
                                 </button>
-                                <h2 className="text-sm font-bold tracking-tight">About this board</h2>
+                                <h2 className="text-sm font-bold tracking-tight">About this project</h2>
                             </div>
                             <button
                                 onClick={onClose}
-                                className={`p-1.5 rounded-xl transition-colors focus:outline-none ${isDark ? 'hover:bg-slate-800/60 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-800'
+                                className={`p-1.5 rounded-xl transition-all hover:bg-slate-150/40 dark:hover:bg-slate-800/50 cursor-pointer ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-750'
                                     }`}
                                 aria-label="Close menu"
                             >
@@ -281,7 +336,7 @@ export default function MenuModal({
 
                             {/* BOARD NAME SECTION */}
                             <div className="flex flex-col gap-2">
-                                <label className={`text-[10px] font-bold tracking-wider uppercase ${isDark ? 'text-slate-500' : 'text-slate-400'
+                                <label className={`text-[10px] font-bold tracking-wider uppercase ${isDark ? 'text-slate-500' : 'text-slate-450'
                                     }`}>
                                     Board Name
                                 </label>
@@ -294,9 +349,9 @@ export default function MenuModal({
                                         onBlur={() => setIsEditingName(false)}
                                         onKeyDown={handleNameKeyDown}
                                         autoFocus
-                                        className={`w-full h-9 rounded-lg border text-sm font-bold px-3 focus:outline-none transition-all ${isDark
-                                                ? 'border-indigo-500 bg-[#0c101b] text-slate-100'
-                                                : 'border-indigo-600 bg-white text-slate-800'
+                                        className={`w-full h-9 rounded-xl border text-sm font-bold px-3 transition-all focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none ${isDark
+                                                ? 'border-slate-800 bg-slate-900/40 text-slate-100'
+                                                : 'border-slate-200 bg-slate-50/50 text-slate-800'
                                             }`}
                                     />
                                 ) : (
@@ -309,22 +364,22 @@ export default function MenuModal({
                                         </span>
                                         <button
                                             onClick={() => setIsEditingName(true)}
-                                            className={`p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-850' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                                            className={`p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-150/40'
                                                 }`}
                                             title="Edit project name"
                                         >
-                                            <Edit2 className="w-3.5 h-3.5" />
+                                            <Edit2 className="w-3 h-3" />
                                         </button>
                                     </div>
                                 )}
                             </div>
 
                             {/* Divider */}
-                            <div className={`h-px w-full ${isDark ? 'bg-slate-850' : 'bg-slate-100'}`} />
+                            <div className={`h-px w-full ${isDark ? 'bg-slate-800/40' : 'bg-slate-100'}`} />
 
                             {/* DESCRIPTION SECTION */}
                             <div className="flex flex-col gap-2">
-                                <label className={`text-[10px] font-bold tracking-wider uppercase ${isDark ? 'text-slate-500' : 'text-slate-400'
+                                <label className={`text-[10px] font-bold tracking-wider uppercase ${isDark ? 'text-slate-500' : 'text-slate-450'
                                     }`}>
                                     Description
                                 </label>
@@ -334,9 +389,9 @@ export default function MenuModal({
                                     onChange={handleDescriptionChange}
                                     placeholder="Add a description to your project..."
                                     rows={6}
-                                    className={`w-full p-3.5 rounded-xl border text-xs leading-normal resize-none focus:outline-none transition-all ${isDark
-                                            ? 'bg-[#0f172a] border-slate-800/80 text-slate-300 focus:border-indigo-500 focus:bg-[#0c101b]'
-                                            : 'bg-white border-slate-200 text-slate-650 focus:border-indigo-650 focus:bg-slate-50/20'
+                                    className={`w-full p-3.5 rounded-xl border text-xs leading-normal resize-none transition-all focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none ${isDark
+                                            ? 'bg-slate-900/40 border-slate-800/80 text-slate-350 focus:bg-slate-900/60'
+                                            : 'bg-slate-50/50 border-slate-200 text-slate-650 focus:bg-white'
                                         } border-dashed focus:border-solid`}
                                 />
                             </div>
@@ -363,6 +418,121 @@ export default function MenuModal({
                                 )}
                             </div>
 
+                        </div>
+                    </>
+                )}
+
+                {/* VIEW 3: ARCHIVED ITEMS */}
+                {currentView === 'archived' && (
+                    <>
+                        {/* Header */}
+                        <div className={`flex items-center justify-between px-4 py-4 border-b shrink-0 ${
+                            isDark ? 'border-slate-800/60 bg-slate-900/10' : 'border-slate-100 bg-slate-50/50'
+                        }`}>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentView('menu')}
+                                    className={`p-1.5 rounded-xl transition-all hover:bg-slate-150/40 dark:hover:bg-slate-800/50 cursor-pointer ${
+                                        isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-750'
+                                    }`}
+                                    aria-label="Back to main menu"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <h2 className="text-sm font-bold tracking-tight">Archived Items</h2>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className={`p-1.5 rounded-xl transition-all hover:bg-slate-150/40 dark:hover:bg-slate-800/50 cursor-pointer ${
+                                    isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-750'
+                                }`}
+                                aria-label="Close menu"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Content Body */}
+                        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                            {loadingArchived ? (
+                                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                                    <p className={`text-xs ${isDark ? 'text-slate-450' : 'text-slate-500'}`}>Loading archived items...</p>
+                                </div>
+                            ) : archivedTasks.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-20 text-center gap-2">
+                                    <Archive className={`w-8 h-8 ${isDark ? 'text-slate-700' : 'text-slate-300'}`} />
+                                    <p className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>No archived items</p>
+                                    <p className={`text-[10px] max-w-[200px] leading-relaxed ${isDark ? 'text-slate-555' : 'text-slate-500'}`}>
+                                        Tasks you archive will show up here. You can restore or delete them permanently.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {archivedTasks.map((task) => (
+                                        <div
+                                            key={task._id}
+                                            className={`p-3 rounded-xl border flex flex-col gap-2.5 transition-all ${
+                                                isDark 
+                                                    ? 'bg-slate-900/40 border-slate-800/80 text-white hover:border-slate-800' 
+                                                    : 'bg-slate-50/40 border-slate-200 text-slate-800 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <h4 className="text-xs font-bold leading-normal truncate flex-1">
+                                                    {task.title}
+                                                </h4>
+                                                <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full uppercase shrink-0 flex items-center gap-1.5 ${
+                                                    isDark ? 'bg-slate-950/80 text-slate-400 border border-slate-800' : 'bg-slate-200/40 text-slate-650'
+                                                }`}>
+                                                    {task.column && (() => {
+                                                        const dotProps = getColumnDotProps(task.column);
+                                                        return (
+                                                            <span
+                                                                className={`w-1.5 h-1.5 rounded-full ${dotProps.className}`}
+                                                                style={dotProps.style}
+                                                            />
+                                                        );
+                                                    })()}
+                                                    {task.column?.name || 'Task'}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center justify-between gap-2 border-t pt-2 dark:border-slate-800/50 border-slate-100">
+                                                <span className={`text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                    {task.archivedAt ? `Archived ${new Date(task.archivedAt).toLocaleDateString()}` : 'Archived'}
+                                                </span>
+
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        onClick={() => handleRestoreTask(task._id)}
+                                                        className={`p-1.5 rounded-lg transition-all hover:scale-105 flex items-center gap-1 cursor-pointer text-[10px] font-semibold ${
+                                                            isDark 
+                                                                ? 'bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400' 
+                                                                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600'
+                                                        }`}
+                                                        title="Send to board"
+                                                    >
+                                                        <RotateCcw className="w-3 h-3" />
+                                                        <span>Restore</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteTask(task._id)}
+                                                        className={`p-1.5 rounded-lg transition-all hover:scale-105 flex items-center gap-1 cursor-pointer text-[10px] font-semibold ${
+                                                            isDark 
+                                                                ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-450' 
+                                                                : 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                                                        }`}
+                                                        title="Delete permanently"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}

@@ -64,6 +64,30 @@ export default function TaskMetaData({ task }) {
             </span>
           </div>
 
+          {task.updatedBy && (
+            <div className="flex justify-between py-1.5">
+              <span className="text-neutral-500 font-mono">
+                Updated By:
+              </span>
+
+              <span className="text-slate-700 dark:text-neutral-300 font-semibold">
+                {task.updatedBy.username || "Unknown"}
+              </span>
+            </div>
+          )}
+
+          {task.startedAt && (
+            <div className="flex justify-between py-1.5">
+              <span className="text-neutral-500 font-mono">
+                Started At:
+              </span>
+
+              <span className="text-slate-700 dark:text-neutral-300 font-semibold">
+                {formatDate(task.startedAt)}
+              </span>
+            </div>
+          )}
+
           <div className="flex justify-between py-1.5">
             <span className="text-neutral-500 font-mono">
               Completed At:
@@ -73,6 +97,30 @@ export default function TaskMetaData({ task }) {
               {formatDate(task.completedAt)}
             </span>
           </div>
+
+          {task.completedBy && (
+            <div className="flex justify-between py-1.5">
+              <span className="text-neutral-500 font-mono">
+                Completed By:
+              </span>
+
+              <span className="text-slate-700 dark:text-neutral-300 font-semibold">
+                {task.completedBy.username || "Unknown"}
+              </span>
+            </div>
+          )}
+
+          {task.lastMovedBy && (
+            <div className="flex justify-between py-1.5">
+              <span className="text-neutral-500 font-mono">
+                Last Moved By:
+              </span>
+
+              <span className="text-slate-700 dark:text-neutral-300 font-semibold">
+                {task.lastMovedBy.username || "Unknown"}
+              </span>
+            </div>
+          )}
 
           <div className="flex justify-between py-1.5">
             <span className="text-neutral-500 font-mono">

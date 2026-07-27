@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { resendVerificationEmail } from "../services/verificationApi";
+import { useAlert } from "../contexts/AlertContext";
 
 function ResendVerificationPage() {
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState("idle"); // idle, loading, success, error
     const [message, setMessage] = useState("");
+    const { showAlert } = useAlert();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -14,21 +16,24 @@ function ResendVerificationPage() {
 
         if (!email.trim()) {
             setStatus("error");
-            setMessage("Please enter your email address.");
+            const errorMsg = "Please enter your email address.";
+            setMessage(errorMsg);
+            showAlert(errorMsg, "error");
             return;
         }
 
         try {
             const response = await resendVerificationEmail(email);
             setStatus("success");
-            setMessage(response.data.message || "Verification email sent! Please check your inbox.");
+            const successMsg = response.data.message || "Verification email sent! Please check your inbox.";
+            setMessage(successMsg);
+            showAlert(successMsg, "success");
             setEmail("");
         } catch (error) {
             setStatus("error");
-            setMessage(
-                error.response?.data?.message ||
-                "Failed to send verification email. Please try again."
-            );
+            const errorMsg = error.response?.data?.message || "Failed to send verification email. Please try again.";
+            setMessage(errorMsg);
+            showAlert(errorMsg, "error");
         }
     };
 

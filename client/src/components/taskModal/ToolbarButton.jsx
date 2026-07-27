@@ -15,8 +15,8 @@ export default function ToolbarButton({
       aria-pressed={active}
       className={`
         flex items-center justify-center
-        min-w-[40px] h-10 px-3
-        rounded-lg
+        min-w-[32px] h-8 px-2
+        rounded-md
         text-sm font-medium
         transition-all duration-200
         border border-transparent
@@ -24,7 +24,7 @@ export default function ToolbarButton({
 
         ${
           active
-            ? "bg-blue-600 text-white shadow-md"
+            ? "bg-indigo-600 text-white shadow-md"
             : "text-slate-600 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-[#252834] hover:text-slate-900 dark:hover:text-white disabled:hover:bg-transparent disabled:hover:text-slate-600 dark:disabled:hover:text-neutral-300"
         }
       `}

@@ -17,8 +17,8 @@ export default function AddTaskModal({isOpen, onClose, onCreate}) {
   if (!isOpen) return null;
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
-      <div className='w-full max-w-md rounded-2xl bg-slate-900 border-slate-700 shadow-2xl'>
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/15 backdrop-blur-[2px]'>
+      <div className='w-[calc(100%-2rem)] max-w-md rounded-2xl bg-slate-900 border-slate-700 shadow-2xl'>
         <div className='flex items-center justify-between p-5 border-slate-800'>
           <h2 className='text-white font-semibold'>
             Create Task

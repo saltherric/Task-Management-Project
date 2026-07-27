@@ -1,7 +1,7 @@
 import React from 'react'
 import { Alert as AntdAlert } from 'antd';
 
-function Alert({ alert }) {
+function Alert({ alert, onClose }) {
 	if (!alert) return null;
 
 	const alertType = alert.type === 'danger' ? 'error' : alert.type;
@@ -10,8 +10,10 @@ function Alert({ alert }) {
 		<AntdAlert
 			className="app-alert-toast"
 			type={alertType}
-			title={alert.message}
+			message={alert.message}
 			showIcon	
+			closable
+			onClose={onClose}
 			style={{ textAlign: 'left' }}
 		/>
 	);

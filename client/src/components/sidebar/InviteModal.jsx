@@ -1,20 +1,24 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback, useContext } from 'react'
 import { getWorkspaceMembers, getAvailableMembers, invitesMember, updateRoleMember, leaveWorkspace } from '../../services/workspaceApi';
 import { createInviteLink } from '../../services/inviteApi';
 import { getStoredUserInfo } from "../../helpers/auth";
 import { useSocket } from '../../contexts/SocketContext';
+import { ThemeContext } from '../../contexts/ThemeContext';
+import { useAlert } from '../../contexts/AlertContext';
 
 export default function InviteModal({ isOpen, workspaceId, onClose }) {
+  const { theme } = useContext(ThemeContext);
+  const isDark = theme === 'dark';
+
   const [members, setMembers] = useState([]);
   const [availableMembers, setAvailableMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('member');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  // const [isLinkCreated, setIsLinkCreated] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const { showAlert } = useAlert();
   const {
     socket,
     isConnected,
@@ -169,12 +173,13 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
       setSearchQuery('');
       setShowSuggestions(false);
 
-      showToast(`${selectedUsers.length} member(s) invited successfully`);
+      showAlert(`${selectedUsers.length} member(s) invited successfully.`, 'success');
     } catch (error) {
       console.error(error);
-      showToast(
+      showAlert(
         error.response?.data?.message ||
-        "Failed to invite members."
+        "Failed to invite members.",
+        'error'
       );
     }
   };
@@ -190,15 +195,16 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
 
       await leaveWorkspace(workspaceId);
 
-      showToast("Left workspace.");
+      showAlert("Left workspace successfully.", 'success');
 
       onClose();
 
     } catch (error) {
 
-      showToast(
+      showAlert(
         error.response?.data?.message ||
-        "Unable to leave workspace."
+        "Unable to leave workspace.",
+        'error'
       );
 
     }
@@ -220,11 +226,12 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
         )
       );
 
-      showToast("Role updated.");
+      showAlert("Role updated successfully.", 'success');
     } catch (error) {
-      showToast(
+      showAlert(
         error.response?.data?.message ||
-        "Failed to update role."
+        "Failed to update role.",
+        'error'
       );
     }
   };
@@ -244,8 +251,9 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
 
         setLinkCopied(true);
 
-        showToast(
-          `${selectedRole} invite link created & copied!`
+        showAlert(
+          `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} invite link created & copied!`,
+          'success'
         );
 
         setTimeout(() => {
@@ -260,7 +268,7 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
 
       setLinkCopied(true);
 
-      showToast("Invite link copied!");
+      showAlert("Invite link copied!", 'success');
 
       setTimeout(() => {
         setLinkCopied(false);
@@ -269,16 +277,12 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
     } catch (error) {
       console.error(error);
 
-      showToast(
+      showAlert(
         error.response?.data?.message ||
-        "Failed to create invite link."
+        "Failed to create invite link.",
+        'error'
       );
     }
-  };
-
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3000);
   };
 
   // Extract Initials for user avatars
@@ -295,20 +299,16 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-
-      {/* Dynamic Toast Feedback Overlay inside Modal */}
-      {toastMessage && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-800 text-xs text-indigo-400 font-semibold px-4.5 py-2.5 rounded-xl shadow-2xl z-[60] flex items-center gap-2 animate-bounce">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
-          {toastMessage}
-        </div>
-      )}
+    <div className="fixed inset-0 z-50 bg-black/15 backdrop-blur-[2px] flex items-center justify-center p-4">
 
       {/* Modal Card Structure */}
       <div
-        className="w-full rounded-2xl p-6 relative shadow-2xl flex flex-col font-sans text-white border border-slate-800/80 h-[580px] max-h-[90vh] overflow-hidden"
-        style={{ backgroundColor: '#1F1F23', maxWidth: '700px' }}
+        className={`w-full rounded-2xl p-6 relative shadow-2xl flex flex-col font-sans border h-[580px] max-h-[90vh] overflow-hidden transition-all duration-300 ${
+          isDark 
+            ? 'bg-[#12141A] border-slate-800/80 text-white' 
+            : 'bg-white border-slate-200 text-slate-800'
+        }`}
+        style={{ maxWidth: '700px' }}
       >
 
         {/* HEADER SECTION */}
@@ -319,12 +319,16 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
             </div>
-            <h2 className="text-base font-bold tracking-tight text-white">Share Workspace</h2>
+            <h2 className={`text-base font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-850'}`}>Share Workspace</h2>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all focus:outline-none"
+            className={`p-1.5 rounded-xl transition-all focus:outline-none ${
+              isDark 
+                ? 'text-slate-400 hover:text-white hover:bg-slate-800/60' 
+                : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+            }`}
             aria-label="Close modal"
           >
             <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -346,16 +350,24 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                 value={searchQuery}
                 onFocus={() => setShowSuggestions(true)}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 bg-slate-900/60 border border-slate-800/80 rounded-xl px-4 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                className={`w-full h-11 border rounded-xl px-4 text-xs focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                  isDark 
+                    ? 'bg-slate-900/40 border-slate-800/80 text-slate-200 placeholder-slate-500' 
+                    : 'bg-slate-50/50 border-slate-200 text-slate-850 placeholder-slate-400'
+                }`}
               />
               {selectedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {selectedUsers.map(user => (
                     <div
                       key={user._id}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-950 border border-blue-700 rounded-lg"
+                      className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg ${
+                        isDark 
+                          ? 'bg-blue-950 border-blue-700 text-blue-300' 
+                          : 'bg-blue-50 border-blue-200 text-blue-700'
+                      }`}
                     >
-                      <span className="text-xs font-medium text-blue-300">
+                      <span className="text-xs font-medium">
                         {user.username}
                       </span>
 
@@ -366,7 +378,7 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                             prev.filter(u => u._id !== user._id)
                           )
                         }
-                        className="text-blue-300 hover:text-white"
+                        className={`${isDark ? 'text-blue-300 hover:text-white' : 'text-blue-700 hover:text-blue-900'}`}
                       >
                         ✕
                       </button>
@@ -377,12 +389,18 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
 
               {/* Autocomplete Dropdown List */}
               {showSuggestions && searchQuery && (
-                <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#1F1F23] border border-slate-800/90 rounded-xl shadow-2xl overflow-hidden z-50 max-h-52 overflow-y-auto divide-y divide-slate-800/30">
-                  <div className="p-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-950/20">
+                <div className={`absolute top-full left-0 right-0 mt-1.5 border rounded-xl shadow-2xl overflow-hidden z-50 max-h-52 overflow-y-auto divide-y ${
+                  isDark 
+                    ? 'bg-[#12141A] border-slate-800/90 divide-slate-800/30' 
+                    : 'bg-white border-slate-250 divide-slate-150'
+                }`}>
+                  <div className={`p-2 text-[10px] font-bold uppercase tracking-wider ${
+                    isDark ? 'text-slate-500 bg-slate-950/20' : 'text-slate-400 bg-slate-50'
+                  }`}>
                     Suggested Team Members
                   </div>
                   {filteredSuggestions.length === 0 ? (
-                    <div className="p-3.5 text-xs text-slate-400 text-center">
+                    <div className={`p-3.5 text-xs text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                       No matches. Press Enter or Share to invite custom email.
                     </div>
                   ) : (
@@ -402,14 +420,16 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                           setSearchQuery('');
                           setShowSuggestions(true);
                         }}
-                        className="w-full flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-900/50 transition-colors text-left"
+                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 transition-colors text-left ${
+                          isDark ? 'hover:bg-slate-900/50' : 'hover:bg-slate-50'
+                        }`}
                       >
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0 ${user.avatarColor}`}>
                           {getInitials(user.username)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-slate-200 truncate">{user.username}</p>
-                          <p className="text-[10px] text-slate-450 truncate">{user.email}</p>
+                          <p className={`text-xs font-semibold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{user.username}</p>
+                          <p className={`text-[10px] truncate ${isDark ? 'text-slate-450' : 'text-slate-500'}`}>{user.email}</p>
                         </div>
                         <span className="text-[10px] font-bold text-indigo-400 shrink-0">Invite</span>
                       </button>
@@ -425,10 +445,14 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                 value={selectedRole}
                 disabled={!isAdmin}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full h-11 rounded-xl border border-slate-800/80 bg-slate-900/60 px-3 text-sm text-slate-300 focus:border-[#0082E6] focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                className={`w-full h-11 rounded-xl border px-3 text-sm focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                  isDark 
+                    ? 'border-slate-800/80 bg-slate-900/40 text-slate-300' 
+                    : 'border-slate-200 bg-slate-50/50 text-slate-700'
+                }`}
               >
-                <option value="member" className='bg-[#1F1F23]'>Member</option>
-                <option value="admin" className='bg-[#1F1F23]'>Admin</option>
+                <option value="member" className={isDark ? 'bg-[#12141A]' : 'bg-white'}>Member</option>
+                <option value="admin" className={isDark ? 'bg-[#12141A]' : 'bg-white'}>Admin</option>
               </select>
             </div>
 
@@ -436,7 +460,7 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
             <button
               type="submit"
               disabled={!isAdmin}
-              className="h-11 bg-[#0082E6] enabled:hover:bg-blue-600 enabled:active:scale-98 text-white font-bold text-xs px-6 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 bg-indigo-600 enabled:hover:bg-indigo-700 enabled:active:scale-98 text-white font-semibold text-xs px-6 rounded-xl transition-all shadow-lg shadow-indigo-600/15 hover:shadow-indigo-600/25 flex items-center justify-center gap-1.5 shrink-0 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
             >
               Share
             </button>
@@ -445,22 +469,26 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
         </form>
 
         {/* SHARE LINK CARD SECTION */}
-        <div className="mt-4 p-3 bg-slate-900/40 rounded-xl border border-slate-800/60 flex items-center justify-between gap-3 shrink-0">
+        <div className={`mt-4 p-3 rounded-xl border flex items-center justify-between gap-3 shrink-0 ${
+          isDark ? 'bg-slate-900/40 border-slate-800/60' : 'bg-slate-50 border-slate-200'
+        }`}>
           <div className="flex items-center gap-3.5 min-w-0">
             {/* Small square link icon container */}
-            <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800/80 flex items-center justify-center shrink-0">
+            <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${
+              isDark ? 'bg-slate-900 border-slate-800/80' : 'bg-white border-slate-250'
+            }`}>
               <svg className="w-4.5 h-4.5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-200">Share this workspace with a link</p>
+              <p className={`text-xs font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Share this workspace with a link</p>
               {inviteLink ? (
-                <p className="text-[10px] text-slate-400 truncate mt-0.5 select-all">
+                <p className={`text-[10px] truncate mt-0.5 select-all ${isDark ? 'text-slate-400' : 'text-slate-650'}`}>
                   {inviteLink}
                 </p>
               ) : (
-                <p className="text-[10px] text-slate-500 mt-0.5">
+                <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-450'}`}>
                   Allows anyone with the URL access to join this workspace
                 </p>
               )}
@@ -471,10 +499,10 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
           <button
             onClick={handleLinkAction}
             disabled={!isAdmin && !inviteLink}
-            className="text-xs font-bold text-[#0082E6] enabled:hover:text-blue-400 transition-colors focus:outline-none shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-xs font-bold text-[#6366F1] enabled:hover:text-indigo-400 transition-colors focus:outline-none shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {linkCopied ? (
-              <span className="text-emerald-400 flex items-center gap-1">
+              <span className="text-emerald-450 flex items-center gap-1">
                 ✓ Copied
               </span>
             ) : inviteLink ? (
@@ -489,13 +517,13 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
         {/* MEMBERS AREA SECTION */}
         <div className="mt-5 flex-1 flex flex-col min-h-0">
           <div className="flex items-center justify-between shrink-0">
-            <span className="text-xs font-extrabold tracking-wider text-slate-450 uppercase">
+            <span className={`text-xs font-extrabold tracking-wider uppercase ${isDark ? 'text-slate-450' : 'text-slate-500'}`}>
               Workspace members [{members.length}]
             </span>
           </div>
 
           {/* Styled Divider below Section Title */}
-          <div className="h-[1px] w-full bg-slate-800/60 my-2.5 shrink-0" />
+          <div className={`h-[1px] w-full my-2.5 shrink-0 ${isDark ? 'bg-slate-800/60' : 'bg-slate-200'}`} />
 
           {/* Member List Scroll Area */}
           <div className="flex-1 overflow-y-auto pr-1 space-y-1 scrollbar-thin">
@@ -507,7 +535,9 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
               return (
                 <div
                   key={member._id}
-                  className="flex items-center justify-between py-3.5 border-b border-slate-800/20 last:border-0"
+                  className={`flex items-center justify-between py-3.5 border-b last:border-0 ${
+                    isDark ? 'border-slate-800/20' : 'border-slate-100'
+                  }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {/* Circular Avatar with initials */}
@@ -518,17 +548,17 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                     {/* Profile descriptors */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-slate-100">{member.username}</p>
-                        <span className="text-[10px] text-slate-500 font-medium flex items-center gap-2">
+                        <p className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{member.username}</p>
+                        <span className={`text-[10px] font-medium flex items-center gap-2 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
                           {member.email}
                           {isSelf && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-500/20 text-blue-400">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-500/20 text-blue-500">
                               You
                             </span>
                           )}
                         </span>
                       </div>
-                      <p className="text-[10px] text-slate-450 truncate mt-0.5">
+                      <p className={`text-[10px] truncate mt-0.5 ${isDark ? 'text-slate-450' : 'text-slate-550'}`}>
                         {member.role === 'admin' ? 'Administrative owner status' : member.role === 'member' ? 'Full editing and workspace access' : 'Read-only access permission'}
                       </p>
                     </div>
@@ -554,24 +584,25 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                         );
                       }}
 
-                      className={`w-[85px] bg-transparent text-xs font-bold border-0 outline-none focus:ring-0 focus:ring-offset-0 transition-colors ${canOpenDropdown
-                        ? "cursor-pointer text-slate-400 hover:text-slate-100"
-                        : "cursor-not-allowed text-slate-600"
-                        }`}
+                      className={`w-[85px] bg-transparent text-xs font-bold border-0 outline-none focus:ring-0 focus:ring-offset-0 transition-colors ${
+                        canOpenDropdown
+                          ? isDark ? "cursor-pointer text-slate-400 hover:text-slate-100" : "cursor-pointer text-slate-500 hover:text-slate-800"
+                          : "cursor-not-allowed text-slate-600"
+                      }`}
                     >
                       {isSelf ? (
                         <>
-                          <option value="__self__" className="bg-[#1F1F23]">
+                          <option value="__self__" className={isDark ? "bg-[#1F1F23]" : "bg-white"}>
                             {member.role === "admin" ? "Admin" : "Member"}
                           </option>
-                          <option value="leave" className="bg-[#1F1F23] text-rose-400">
+                          <option value="leave" className={`${isDark ? "bg-[#1F1F23]" : "bg-white"} text-rose-500`}>
                             Leave Workspace
                           </option>
                         </>
                       ) : (
                         <>
-                          <option value="admin" className="bg-[#1F1F23]">Admin</option>
-                          <option value="member" className="bg-[#1F1F23]">Member</option>
+                          <option value="admin" className={isDark ? "bg-[#1F1F23]" : "bg-white"}>Admin</option>
+                          <option value="member" className={isDark ? "bg-[#1F1F23]" : "bg-white"}>Member</option>
                         </>
                       )}
                     </select>

@@ -45,5 +45,9 @@ const unArchiveTask = async (taskId) => {
   const response = await API.patch(`/tasks/${taskId}/unarchive`);
   return response.data;
 }
+const getArchivedTasksByProject = async (projectId) => {
+  const response = await API.get(`/tasks/project/${projectId}/archived`);
+  return response.data;
+}
 
-export { getTasksByProject, moveTask, updateTask, deleteTask, createTask, archiveTask, unArchiveTask };
+export { getTasksByProject, moveTask, updateTask, deleteTask, createTask, archiveTask, unArchiveTask, getArchivedTasksByProject };

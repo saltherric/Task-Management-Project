@@ -1,36 +1,15 @@
-import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import Alert from '../components/alert';
 import API from '../services/api';
 import { Form, Input, Button, Checkbox } from 'antd';
-import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined, GoogleOutlined } from '@ant-design/icons';
+import { useAlert } from '../contexts/AlertContext';
 
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = location.state?.redirectTo || '/home';
   // const dispatch = useDispatch();
-  const [alert, setAlert] = useState(() => {
-    const pendingAlert = localStorage.getItem('pendingAlert');
-    if (!pendingAlert) return null;
-
-    localStorage.removeItem('pendingAlert');
-    return JSON.parse(pendingAlert);
-  });
-
-
-  useEffect(() => {
-    if (!alert) return;
-
-    const timerId = setTimeout(() => {
-      setAlert(null);
-    }, 2500); 
-
-    return () => clearTimeout(timerId);
-  }, [alert]);
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-  };
+  const { showAlert } = useAlert();
 
   const handleSubmit = async ({ email, password }) => {
     try {
@@ -47,25 +26,24 @@ function Login() {
         JSON.stringify(response.data)
       );
      
-       // Store alert to display on next page
-       localStorage.setItem(
-         'pendingAlert',
-         JSON.stringify({ type: 'success', message: 'Logged in successfully.' })
-       );
-     
-       navigate(redirectTo, { replace: true });
+      showAlert('Logged in successfully.', 'success');
+      navigate(redirectTo, { replace: true });
       
     } catch (error) {
       console.log(error.response?.data);
-       const backendMessage = error.response?.data?.message;
-      showAlert('danger', backendMessage || 'Login failed, please try again!');
+      const backendMessage = error.response?.data?.message;
+      showAlert(backendMessage || 'Login failed, please try again!', 'danger');
     }
+  };
+
+  const handleGoogleLogin = () => {
+    const apiBaseUrl = API.defaults.baseURL || 'http://localhost:5000/api';
+    window.location.href = `${apiBaseUrl}/auth/google`;
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3">
-      <Alert alert={alert} onClose={() => setAlert(null)} />
-      <div className="bg-(--color-card) backdrop-blur-[10px] border border-blue-600/10 rounded-3xl py-10 px-[35px] w-full max-w-105 text-center shadow-[0_8px_32px_rgba(30,41,59,0.10)]">
+      <div className="bg-(--color-card) backdrop-blur-[10px] border border-indigo-600/10 rounded-3xl py-10 px-[35px] w-full max-w-105 text-center shadow-[0_8px_32px_rgba(30,41,59,0.10)]">
         <h1 className="mb-9 pb-8 text-4xl font-semibold">Login</h1>
 
         <Form
@@ -110,6 +88,21 @@ function Login() {
             </Button>
           </Form.Item>
         </Form>
+
+        <div className="flex items-center gap-3 my-5">
+          <div className="h-[1px] flex-1 bg-indigo-600/10"></div>
+          <span className="text-xs text-(--color-muted) uppercase">or</span>
+          <div className="h-[1px] flex-1 bg-indigo-600/10"></div>
+        </div>
+
+        <Button 
+          type="default" 
+          icon={<GoogleOutlined />} 
+          className="google-login-button"
+          onClick={handleGoogleLogin}
+        >
+          Continue with Google
+        </Button>
 
         {/* Footer */}
         <p className="mt-6 text-sm text-(--color-muted)">

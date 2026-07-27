@@ -3,10 +3,11 @@ const Workspace = require("../models/Workspace");
 const calculateSmartPriority = require("../utils/calculateSmartPriority");
 const Project = require("../models/Project");
 const User = require("../models/User");
-const {createNotification} = require("../services/notificationService");
+const { createNotification } = require("../services/notificationService");
 const Column = require("../models/Column");
 const { emitToWorkspace } = require("../socket/socketGateway");
 const { getProjectForUser } = require("./projectAccessService");
+const { logActivity } = require("./activityService");
 
 const canAccessProject = (project, userId) =>
     project.visibility === "workspace" ||
@@ -49,26 +50,34 @@ const createTask = async ({ taskData, user, project, column }) => {
     const position = lastTask
         ? lastTask.position + 1
         : 1;
-    
+
     // validate member in workspace 
-    if( taskData.assignedTo && taskData.assignedTo.length > 0 ){
+    if (taskData.assignedTo && taskData.assignedTo.length > 0) {
         // get workspace from project
-        const workspace = await Workspace.findById( project.workspace );
-        for(const userId of taskData.assignedTo){
+        const workspace = await Workspace.findById(project.workspace);
+
+        const member = workspace.members.find(
+            (m) => m.user.toString() === user._id.toString()
+        );
+        const isAdmin = (member && member.role === "admin") || (user.role === "admin");
+        if (!isAdmin) {
+            throw new Error("Access Denied: Only admins can assign users to tasks");
+        }
+        for (const userId of taskData.assignedTo) {
             // validate user exists
             const user = await User.findById(userId);
-            if(!user){
+            if (!user) {
                 throw new Error(
                     'Assigned user not found'
                 );
             }
-            
+
             // validate workspace membership
             const isMember = workspace.members.some(
                 member => member.user.toString() === userId.toString()
             );
 
-            if(!isMember){
+            if (!isMember) {
                 throw new Error('Assigned user is not workspace member');
             }
             if (!canAccessProject(project, userId)) {
@@ -102,7 +111,21 @@ const createTask = async ({ taskData, user, project, column }) => {
         { path: "createdBy", select: "username email" },
         { path: "assignedTo", select: "username email avatar" },
     ]);
-    
+
+    try {
+        await logActivity({
+            actor: user._id,
+            type: "task_created",
+            targetType: "Task",
+            targetId: task._id,
+            targetTitle: task.title,
+            workspace: project.workspace,
+            project: project._id,
+        });
+    } catch (activityError) {
+        console.error("Failed to log task_created activity:", activityError);
+    }
+
     emitToWorkspace(
         project.workspace.toString(),
         "task:created",
@@ -125,11 +148,14 @@ const getTasks = async (projectId, user) => {
         project: projectId,
         isArchived: false,
     })
-    .populate("createdBy", "username email")
-    .populate("assignedTo", "username email")
-    .populate("column", "name")
-    .populate("project", "name")
-    .sort({ position: 1 });
+        .populate("createdBy", "username email")
+        .populate("assignedTo", "username email")
+        .populate("column", "name")
+        .populate("project", "name")
+        .populate("completedBy", "username email")
+        .populate("updatedBy", "username email")
+        .populate("lastMovedBy", "username email")
+        .sort({ position: 1 });
 
     return tasks;
 };
@@ -152,6 +178,13 @@ const updateTask = async ({ taskId, taskData, user }) => {
         tags: task.tags,
     };
     if (taskData.assignedTo) {
+        const member = workspace.members.find(
+            (m) => m.user.toString() === user._id.toString()
+        );
+        const isAdmin = (member && member.role === "admin") || (user.role === "admin");
+        if (!isAdmin) {
+            throw new Error("Access Denied: Only admins can assign or reassign users");
+        }
         const workspaceMemberIds =
             workspace.members.map(
                 member => member.user.toString()
@@ -191,6 +224,7 @@ const updateTask = async ({ taskId, taskData, user }) => {
     task.title = taskData.title ?? task.title;
     task.description = taskData.description ?? task.description;
     task.priority = taskData.priority ?? task.priority;
+    const oldAssignees = [...(task.assignedTo || [])];
     task.assignedTo = taskData.assignedTo ?? task.assignedTo;
     task.tags = taskData.tags ?? task.tags;
     task.dueDate = taskData.dueDate ?? task.dueDate;
@@ -208,13 +242,22 @@ const updateTask = async ({ taskId, taskData, user }) => {
             task.column = matchingCol._id;
         }
 
-        // Sync completedAt
+        // Sync completedAt and completedBy
         if (taskData.status === "done") {
             task.completedAt = new Date();
+            task.completedBy = user._id;
         } else if (oldStatus === "done") {
             task.completedAt = null;
+            task.completedBy = null;
+        }
+
+        // Sync startedAt
+        if (taskData.status === "inprogress" && !task.startedAt) {
+            task.startedAt = new Date();
         }
     }
+
+    task.updatedBy = user._id;
 
     await task.save();
 
@@ -233,8 +276,68 @@ const updateTask = async ({ taskId, taskData, user }) => {
     }
     if (oldDueDate !== newDueDate) changes.push("due date");
 
+    try {
+        const isCompleted = taskData.status === "done" && oldStatus !== "done";
+        const isAssignmentChanged = taskData.assignedTo && (
+            oldAssignees.length !== task.assignedTo.length ||
+            !oldAssignees.every(id => task.assignedTo.some(newId => newId.toString() === id.toString()))
+        );
+
+        if (isCompleted) {
+            await logActivity({
+                actor: user._id,
+                type: "task_completed",
+                targetType: "Task",
+                targetId: task._id,
+                targetTitle: task.title,
+                workspace: workspace._id,
+                project: project._id,
+            });
+        } else if (isAssignmentChanged && task.assignedTo.length > 0) {
+            const addedAssignees = task.assignedTo.filter(id => !oldAssignees.some(oldId => oldId.toString() === id.toString()));
+            const recipientId = addedAssignees.length > 0 ? addedAssignees[0] : task.assignedTo[0];
+            await logActivity({
+                actor: user._id,
+                type: "task_assigned",
+                targetType: "Task",
+                targetId: task._id,
+                targetTitle: task.title,
+                recipient: recipientId,
+                workspace: workspace._id,
+                project: project._id,
+            });
+        } else if (taskData.status && taskData.status !== oldStatus) {
+            await logActivity({
+                actor: user._id,
+                type: "status_changed",
+                targetType: "Task",
+                targetId: task._id,
+                targetTitle: task.title,
+                workspace: workspace._id,
+                project: project._id,
+                metadata: {
+                    oldStatus,
+                    newStatus: task.status,
+                }
+            });
+        } else if (changes.length > 0) {
+            await logActivity({
+                actor: user._id,
+                type: "task_updated",
+                targetType: "Task",
+                targetId: task._id,
+                targetTitle: task.title,
+                workspace: workspace._id,
+                project: project._id,
+                metadata: { changes }
+            });
+        }
+    } catch (activityError) {
+        console.error("Failed to log activity in updateTask:", activityError);
+    }
+
     const sender = await User.findById(user._id)
-    .select("username");
+        .select("username");
 
     if (changes.length > 0) {
         for (const assignee of task.assignedTo) {
@@ -265,7 +368,10 @@ const updateTask = async ({ taskId, taskData, user }) => {
         .populate("createdBy", "username email")
         .populate("assignedTo", "username email")
         .populate("column", "name")
-        .populate("project", "name");
+        .populate("project", "name")
+        .populate("completedBy", "username email")
+        .populate("updatedBy", "username email")
+        .populate("lastMovedBy", "username email");
 
     emitToWorkspace(
         workspace._id.toString(),
@@ -282,7 +388,7 @@ const updateTask = async ({ taskId, taskData, user }) => {
 
 const deleteTask = async ({ taskId, user }) => {
     const task = await Task.findById(taskId);
-    if (!task ) {
+    if (!task) {
         throw new Error("Task not found");
     }
 
@@ -290,10 +396,10 @@ const deleteTask = async ({ taskId, user }) => {
     const workspace = await Workspace.findById(project.workspace);
 
     const member = workspace.members.find(
-        member => 
+        member =>
             member.user.toString() === user._id.toString()
     );
-    if(!member) {
+    if (!member) {
         throw new Error("Access Denied");
     }
 
@@ -334,11 +440,30 @@ const archiveTask = async (taskId, userId) => {
 
     await task.save();
 
+    try {
+        await logActivity({
+            actor: userId,
+            type: "task_updated",
+            targetType: "Task",
+            targetId: task._id,
+            targetTitle: task.title,
+            workspace: project.workspace,
+            project: project._id,
+            metadata: { archived: true }
+        });
+    } catch (activityError) {
+        console.error("Failed to log task archive activity:", activityError);
+    }
+
     const populatedTask = await Task.findById(taskId)
         .populate("createdBy", "username email avatar")
         .populate("assignedTo", "username email avatar")
         .populate("column", "name")
-        .populate("project", "name");
+        .populate("project", "name")
+        .populate("completedBy", "username email avatar")
+        .populate("updatedBy", "username email avatar")
+        .populate("lastMovedBy", "username email avatar")
+        .populate("archivedBy", "username email avatar");
 
     emitToWorkspace(
         project.workspace.toString(),
@@ -369,11 +494,30 @@ const unarchiveTask = async (taskId, userId) => {
 
     await task.save();
 
+    try {
+        await logActivity({
+            actor: userId,
+            type: "task_updated",
+            targetType: "Task",
+            targetId: task._id,
+            targetTitle: task.title,
+            workspace: project.workspace,
+            project: project._id,
+            metadata: { archived: false }
+        });
+    } catch (activityError) {
+        console.error("Failed to log task unarchive activity:", activityError);
+    }
+
     const populatedTask = await Task.findById(taskId)
         .populate("createdBy", "username email avatar")
         .populate("assignedTo", "username email avatar")
         .populate("column", "name")
-        .populate("project", "name");
+        .populate("project", "name")
+        .populate("completedBy", "username email avatar")
+        .populate("updatedBy", "username email avatar")
+        .populate("lastMovedBy", "username email avatar")
+        .populate("archivedBy", "username email avatar");
 
     emitToWorkspace(
         project.workspace.toString(),
@@ -395,8 +539,15 @@ const getArchivedTasks = async (projectId, userId) => {
         project: projectId,
         isArchived: true,
     })
-    .populate("archivedBy", "username email")
-    .sort({ archivedAt: -1 });
+        .populate("createdBy", "username email")
+        .populate("assignedTo", "username email")
+        .populate("column", "name")
+        .populate("project", "name")
+        .populate("completedBy", "username email")
+        .populate("updatedBy", "username email")
+        .populate("lastMovedBy", "username email")
+        .populate("archivedBy", "username email")
+        .sort({ archivedAt: -1 });
 }
 
 const moveTask = async ({ taskId, columnId, user }) => {
@@ -412,6 +563,19 @@ const moveTask = async ({ taskId, columnId, user }) => {
 
     if (!workspace) {
         throw new Error("Workspace not found");
+    }
+
+    const member = workspace.members.find(
+        (m) => m.user.toString() === user._id.toString()
+    );
+    const isAdmin = (member && member.role === "admin") || (user.role === "admin");
+
+    const isAssigned = (task.assignedTo || []).some(
+        (assigneeId) => assigneeId.toString() === user._id.toString()
+    );
+
+    if (!isAdmin && !isAssigned) {
+        throw new Error("Access Denied: Only admins and assigned users can move tasks");
     }
 
     const oldColumnId = task.column.toString();
@@ -431,8 +595,47 @@ const moveTask = async ({ taskId, columnId, user }) => {
     task.completedAt = isMovingToDone
         ? new Date()
         : (wasInDone ? null : task.completedAt);
+    task.completedBy = isMovingToDone
+        ? user._id
+        : (wasInDone ? null : task.completedBy);
+
+    if (task.status === "inprogress" && !task.startedAt) {
+        task.startedAt = new Date();
+    }
+
+    task.lastMovedBy = user._id;
 
     await task.save();
+
+    try {
+        if (isMovingToDone) {
+            await logActivity({
+                actor: user._id,
+                type: "task_completed",
+                targetType: "Task",
+                targetId: task._id,
+                targetTitle: task.title,
+                workspace: workspace._id,
+                project: project._id,
+            });
+        } else if (oldColumnId !== columnId.toString()) {
+            await logActivity({
+                actor: user._id,
+                type: "status_changed",
+                targetType: "Task",
+                targetId: task._id,
+                targetTitle: task.title,
+                workspace: workspace._id,
+                project: project._id,
+                metadata: {
+                    oldStatus: mapColumnNameToStatus(oldColumn.name),
+                    newStatus: task.status,
+                }
+            });
+        }
+    } catch (activityError) {
+        console.error("Failed to log activity in moveTask:", activityError);
+    }
 
     const sender = await User.findById(user._id)
         .select("username");
@@ -453,6 +656,10 @@ const moveTask = async ({ taskId, columnId, user }) => {
                 title: "Task Moved",
                 message: `${sender.username} moved task "${task.title}" from "${oldColumn.name}" to "${newColumn.name}".`,
                 actionUrl: `/tasks/${task._id}`,
+                metadata: {
+                    fromColumn: oldColumn.name,
+                    toColumn: newColumn.name
+                }
             });
         }
     }
@@ -461,7 +668,10 @@ const moveTask = async ({ taskId, columnId, user }) => {
         .populate("createdBy", "username email avatar")
         .populate("assignedTo", "username email avatar")
         .populate("column", "name")
-        .populate("project", "name");
+        .populate("project", "name")
+        .populate("completedBy", "username email avatar")
+        .populate("updatedBy", "username email avatar")
+        .populate("lastMovedBy", "username email avatar");
 
     emitToWorkspace(
         workspace._id.toString(),
@@ -481,7 +691,7 @@ module.exports = {
     createTask,
     getTasks,
     updateTask,
-    deleteTask, 
+    deleteTask,
     archiveTask,
     unarchiveTask,
     getArchivedTasks,

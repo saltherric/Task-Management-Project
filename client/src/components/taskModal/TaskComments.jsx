@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {getComments, createComment} from "../../services/commentApi";
 import { getStoredUserInfo } from "../../helpers/auth";
 import { useSocket } from "../../contexts/SocketContext";
+import { useAlert } from "../../contexts/AlertContext";
 
 export default function TaskComments({ taskId, updateField }) {
   const [comments, setComments] = useState([]);
@@ -10,6 +11,7 @@ export default function TaskComments({ taskId, updateField }) {
   const [isPostingComment, setIsPostingComment] = useState(false);
   const currentUser = getStoredUserInfo();
   const { socket, isConnected } = useSocket();
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     if (!taskId) return;
@@ -23,6 +25,7 @@ export default function TaskComments({ taskId, updateField }) {
         setComments(data.comments || []);
       } catch (error) {
         console.error(error);
+        showAlert("Failed to load comments.", "error");
       } finally {
         setLoading(false);
       }
@@ -70,6 +73,7 @@ export default function TaskComments({ taskId, updateField }) {
       setCommentText("");
     } catch (error) {
       console.error(error);
+      showAlert(error.response?.data?.message || "Failed to post comment.", "error");
     } finally {
       setIsPostingComment(false);
     }

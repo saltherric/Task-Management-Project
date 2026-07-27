@@ -1,7 +1,7 @@
 :root, [data-theme="light"] {
 	--color-bg: #F5F7FB;
 	--color-card: #FFFFFF;
-	--color-primary: #2563EB;
+	--color-primary: #6366F1;
 	--color-text: #1E293B;
 	--color-muted: rgba(30, 41, 59, 0.6);
 	--color-border: #E2E8F0;
@@ -15,7 +15,7 @@
 .dark, [data-theme="dark"] {
 	--color-bg: #0F172A;
 	--color-card: #1E293B;
-	--color-primary: #3B82F6;   
+	--color-primary: #818CF8;   
 	--color-text: #F8FAFC;
 	--color-muted: rgba(248, 250, 252, 0.6);
 	--color-border: #334155;

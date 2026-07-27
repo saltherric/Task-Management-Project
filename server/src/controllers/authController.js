@@ -37,8 +37,17 @@ const googleCallback = async (req, res, next) => {
     }
 };
 
+const getMe = async (req, res, next) => {
+    try {
+        res.json(req.user);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     googleCallback,
+    getMe,
 };

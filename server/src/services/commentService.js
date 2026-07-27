@@ -1,5 +1,7 @@
 const Comment = require( "../models/Comment");
 const Task = require ("../models/Task");
+const Project = require("../models/Project");
+const { logActivity } = require("./activityService");
 
 const createComment = async({ taskId, user, commentData}) => {
     const task = await Task.findById(taskId);
@@ -22,6 +24,24 @@ const createComment = async({ taskId, user, commentData}) => {
         taskId,
         { $inc: { commentCount: 1 } }
     );
+
+    const project = await Project.findById(task.project);
+    if (project) {
+        try {
+            await logActivity({
+                actor: user._id,
+                type: "comment_added",
+                targetType: "Comment",
+                targetId: comment._id,
+                targetTitle: task.title,
+                content: comment.content,
+                workspace: project.workspace,
+                project: project._id,
+            });
+        } catch (activityError) {
+            console.error("Failed to log comment activity:", activityError);
+        }
+    }
 
     return await Comment.findById(comment._id)
         .populate("user", "username email");

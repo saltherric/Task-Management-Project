@@ -1,5 +1,7 @@
-const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config();
+
+const express = require("express");
 const http = require("http");
 const connectDB = require("./config/db.js");
 const app = require("./app.js");
@@ -7,8 +9,7 @@ const { Server } = require("socket.io");
 const { registerSocketHandlers } = require("./socket/socketManager");
 const { setSocketServer } = require("./socket/socketGateway");
 const { initializeTelegramBot } = require("./services/telegramBotService");
-
-dotenv.config();
+const { startOverdueTaskScheduler } = require("./cron/overdueTaskCron");
 
 const PORT = process.env.PORT || 5000;
 const CLIENT_URL = process.env.CLIENT_URL;
@@ -44,6 +45,7 @@ server.on("error", (error) => {
 const startServer = async () => {
   await connectDB();
   await initializeTelegramBot();
+  startOverdueTaskScheduler();
 
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

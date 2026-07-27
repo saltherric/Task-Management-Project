@@ -3,13 +3,14 @@ import { getWorkspaceMembers } from '../../services/workspaceApi';
 import { inviteProjectMember, removeProjectMember } from '../../services/projectApi';
 import { getStoredUserInfo } from "../../helpers/auth";
 import { UserPlus, X, Search, Trash2, Crown } from 'lucide-react';
+import { useAlert } from '../../contexts/AlertContext';
 
 export default function InviteTaskModal({ isOpen, project, projectId, workspaceId, onClose, onProjectUpdated }) {
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { showAlert } = useAlert();
 
   const searchContainerRef = useRef(null);
   const currentUser = getStoredUserInfo();
@@ -84,26 +85,21 @@ export default function InviteTaskModal({ isOpen, project, projectId, workspaceI
     }
   }, [project, workspaceMembers, projectCreatorId]);
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3000);
-  };
-
   const handleInviteMember = async (userId, username) => {
     try {
       setIsLoading(true);
       const data = await inviteProjectMember(projectId, userId);
       if (data.success && data.project) {
         onProjectUpdated(data.project);
-        showToast(`Invited ${username} successfully`);
+        showAlert(`Invited ${username} successfully`, "success");
       } else {
-        showToast("Failed to invite member");
+        showAlert("Failed to invite member", "error");
       }
       setSearchQuery('');
       setShowSuggestions(false);
     } catch (error) {
       console.error(error);
-      showToast(error.response?.data?.message || "Failed to invite member.");
+      showAlert(error.response?.data?.message || "Failed to invite member.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -118,13 +114,13 @@ export default function InviteTaskModal({ isOpen, project, projectId, workspaceI
       const data = await removeProjectMember(projectId, userId);
       if (data.success && data.project) {
         onProjectUpdated(data.project);
-        showToast(`Removed ${username} from project`);
+        showAlert(`Removed ${username} from project`, "success");
       } else {
-        showToast("Failed to remove member");
+        showAlert("Failed to remove member", "error");
       }
     } catch (error) {
       console.error(error);
-      showToast(error.response?.data?.message || "Failed to remove member.");
+      showAlert(error.response?.data?.message || "Failed to remove member.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -143,14 +139,7 @@ export default function InviteTaskModal({ isOpen, project, projectId, workspaceI
   if (!isOpen || !project) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      
-      {toastMessage && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-800 text-xs text-indigo-400 font-semibold px-4.5 py-2.5 rounded-xl shadow-2xl z-[60] flex items-center gap-2 animate-bounce">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
-          {toastMessage}
-        </div>
-      )}
+    <div className="fixed inset-0 z-50 bg-black/15 backdrop-blur-[2px] flex items-center justify-center p-4">
 
       <div
         className="w-full rounded-2xl p-6 relative shadow-2xl flex flex-col font-sans text-white border border-slate-800/80 h-[520px] max-h-[90vh] overflow-hidden bg-[#12141C]"

@@ -2,8 +2,7 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import {getWorkspaces, createWorkspace} from '../../services/workspaceApi';
 import {getProjects, createProject} from '../../services/projectApi';
-import { useNavigate } from "react-router-dom";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import WorkspaceModal from './WorkspaceModal';
 import ProjectModal from './ProjectModal';
 import InviteModal from './InviteModal';
@@ -11,10 +10,12 @@ import SettingModal from './SettingModal';
 import { Lock, Globe } from 'lucide-react';
 import { useSocket } from '../../contexts/SocketContext';
 import { getStoredUserInfo } from '../../helpers/auth';
+import { useAlert } from '../../contexts/AlertContext';
 
-function Sidebar() {
+function Sidebar({ isOpen, onClose }) {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
+  const { showAlert } = useAlert();
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const dropdownRef = useRef(null);
   const [workspaces, setWorkspaces] = useState([]);
@@ -24,6 +25,7 @@ function Sidebar() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSettingModal, setShowSettingModal] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { workspaceId, projectId} = useParams();
 
@@ -38,7 +40,6 @@ function Sidebar() {
       const updatedProject = payload.project;
       if (!updatedProject) return;
 
-      // Make sure the project belongs to the current workspace
       const projWorkspaceId = updatedProject.workspace?._id || updatedProject.workspace;
       if (String(projWorkspaceId) !== String(workspaceId)) return;
 
@@ -66,12 +67,29 @@ function Sidebar() {
       }
     };
 
+    const handleProjectDeletedSocket = (payload) => {
+      const deletedProjId = payload.projectId;
+      if (!deletedProjId) return;
+
+      const deletedProjWorkspaceId = payload.workspaceId;
+      if (deletedProjWorkspaceId && String(deletedProjWorkspaceId) !== String(workspaceId)) return;
+
+      setProjects((prev) => prev.filter((p) => p._id !== deletedProjId));
+
+      if (String(projectId) === String(deletedProjId)) {
+        navigate(`/workspaces/${workspaceId}`);
+      }
+    };
+
     socket.on("project:updated", handleProjectUpdatedSocket);
+    socket.on("project:deleted", handleProjectDeletedSocket);
 
     return () => {
       socket.off("project:updated", handleProjectUpdatedSocket);
+      socket.off("project:deleted", handleProjectDeletedSocket);
     };
-  }, [socket, isConnected, workspaceId, currentUserId]);
+  }, [socket, isConnected, workspaceId, currentUserId, projectId, navigate]);
+
   
   useEffect(() => {
     function handleClickOutside(event) {
@@ -130,8 +148,9 @@ function Sidebar() {
         if (workspaceId) {
           navigate(`/workspaces/${workspaceId}`);
         }
+        onClose?.();
       },
-      active: !projectId
+      active: !projectId && !location.pathname.includes('/analytics') && !location.pathname.includes('/activity')
     },
     { 
       label: 'Board', 
@@ -141,10 +160,37 @@ function Sidebar() {
           if (projectId) return;
           if (projects && projects.length > 0) {
             navigate(`/workspaces/${workspaceId}/projects/${projects[0]._id}`);
+          } else {
+            showAlert("No projects found. Please create a project first.", "info");
           }
+        } else {
+          showAlert("Please select or create a workspace first.", "info");
         }
+        onClose?.();
       },
       active: !!projectId
+    },
+    { 
+      label: 'Analytics', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg>,
+      onClick: () => {
+        if (workspaceId) {
+          navigate(`/workspaces/${workspaceId}/analytics`);
+        }
+        onClose?.();
+      },
+      active: location.pathname.includes('/analytics')
+    },
+    { 
+      label: 'Activity', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      onClick: () => {
+        if (workspaceId) {
+          navigate(`/workspaces/${workspaceId}/activity`);
+        }
+        onClose?.();
+      },
+      active: location.pathname.includes('/activity')
     },
   ];
 
@@ -169,13 +215,19 @@ function Sidebar() {
   const handleCreateWorkspace = async (workspaceData) => {
     try {
       const respone = await createWorkspace(workspaceData);
+      const newWorkspace = respone.workspace;
       setWorkspaces((prev) => [
-        respone.workspace,
+        newWorkspace,
         ...prev
       ]);
       setShowCreateWorkspaceModal(false);
+      showAlert("Workspace created successfully.", "success");
+      if (newWorkspace?._id) {
+        navigate(`/workspaces/${newWorkspace._id}`);
+      }
     } catch (error) {
       console.error(error);
+      showAlert(error.response?.data?.message || "Failed to create workspace.", "error");
     }
   };
 
@@ -186,15 +238,25 @@ function Sidebar() {
         workspace: workspaceId,
       });
 
-      setProjects(prev => [
-        response.project,
-        ...prev,
-      ]);
+      setProjects(prev => {
+        const exists = prev.some((p) => p._id === response.project._id);
+        if (exists) return prev;
+        return [
+          response.project,
+          ...prev,
+        ];
+      });
 
       setShowCreateProjectModal(false);
+      showAlert("Project created successfully.", "success");
+
+      if (response.project?._id) {
+        navigate(`/workspaces/${workspaceId}/projects/${response.project._id}`);
+      }
 
     } catch (error) {
       console.error(error);
+      showAlert(error.response?.data?.message || "Failed to create project.", "error");
     }
   };
   
@@ -207,14 +269,47 @@ function Sidebar() {
   }
 
   return (
-    <aside className={`sidebar flex w-full flex-col overflow-hidden border-b ${
-      isDark
-        ? 'is-dark border-slate-800 bg-[#080d19] text-slate-100'
-        : 'border-slate-200 bg-slate-50 text-slate-900'
-      } 
-      lg:fixed lg:left-0 lg:top-16 lg:z-30 lg:h-[calc(100vh-4rem)] lg:w-72 lg:border-b-0 lg:border-r`}
-    >
-      <div className="flex-1 overflow-y-auto px-4 py-6 lg:px-6 lg:py-8">
+    <>
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden transition-opacity duration-300"
+        />
+      )}
+
+      <aside className={`sidebar flex flex-col overflow-hidden border-r transition-transform duration-300 ease-in-out ${
+        isDark
+          ? 'is-dark border-slate-800 bg-[#080d19] text-slate-100'
+          : 'border-slate-200 bg-slate-50 text-slate-900'
+        } 
+        fixed inset-y-0 left-0 z-50 w-72 
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 lg:fixed lg:left-0 lg:top-16 lg:z-30 lg:h-[calc(100vh-4rem)] lg:w-72 lg:border-b-0 lg:border-r`}
+      >
+        {/* Mobile Sidebar Header */}
+        <div className={`flex items-center justify-between px-6 py-4 border-b lg:hidden ${
+          isDark ? 'border-slate-800' : 'border-slate-200'
+        }`}>
+          <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-indigo-500">
+            TaskMe Menu
+          </span>
+          <button
+            onClick={onClose}
+            className={`p-1.5 rounded-xl border transition-colors ${
+              isDark 
+                ? 'border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800' 
+                : 'border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+            }`}
+            aria-label="Close sidebar"
+          >
+            <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-6 lg:px-6 lg:py-8">
 
         {/* ── Workspace section ── */}
         <div className="mb-6">
@@ -224,7 +319,7 @@ function Sidebar() {
             </span>
             <button
               onClick={() => setShowCreateWorkspaceModal(true)}
-              className="text-[#0082E6] hover:text-blue-400 p-1 rounded hover:bg-slate-800/40 transition-colors focus:outline-none"
+              className={`text-[#6366F1] hover:text-indigo-400 p-1 rounded ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-200'} transition-colors focus:outline-none`}
               title="Create Workspace"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
@@ -233,13 +328,7 @@ function Sidebar() {
             </button>
           </div>
 
-          <WorkspaceModal
-            isOpen={showCreateWorkspaceModal}
-            onClose={() =>
-              setShowCreateWorkspaceModal(false)
-            }
-            onCreate={handleCreateWorkspace}
-          />
+
 
           {/* Workspace switcher */}
           <div className="relative" ref={dropdownRef}>
@@ -253,11 +342,11 @@ function Sidebar() {
             >
               <div className="flex items-center gap-2.5">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-semibold shrink-0 ${
-                  isDark ? 'bg-indigo-600 text-indigo-200' : 'bg-indigo-100 text-indigo-700'
+                  isDark ? 'bg-indigo-400 text-indigo-200' : 'bg-indigo-100 text-indigo-700'
                 }`}>
-                  {activeWorkspace?.name?.charAt(0)?.toUpperCase() || "W"}
+                  💼
                 </div>
-                <span className="text-sm font-medium truncate">{activeWorkspace?.name}</span>
+                <span className="text-xs font-medium truncate">{activeWorkspace?.name}</span>
               </div>
               <svg
                 className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${workspaceDropdownOpen ? 'rotate-180' : ''}`}
@@ -280,6 +369,7 @@ function Sidebar() {
                     onClick={() => {
                       navigate(`/workspaces/${ws._id}`);
                       setWorkspaceDropdownOpen(false);
+                      onClose?.();
                     }}
                     className={`flex w-full items-center gap-2.5 pl-2 pr-3 py-2 text-sm transition-colors ${
                       ws._id === workspaceId
@@ -287,10 +377,10 @@ function Sidebar() {
                         : isDark ? 'text-slate-300 hover:bg-white/[0.05]' : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="w-5 h-5 rounded bg-gradient-to-br from-fuchsia-600 to-violet-700 flex items-center justify-center text-[10px] shrink-0">
-                      🏢
+                    <div className="w-5 h-5 rounded bg-gradient-to-br from-fuchsia-200 to-violet-400 flex items-center justify-center text-[10px] shrink-0">
+                      💼
                     </div>
-                    <span className="truncate">{ws.name}</span>
+                    <span className="text-xs truncate">{ws.name}</span>
                     {ws._id === workspaceId && (
                       <svg className="ml-auto w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -306,31 +396,21 @@ function Sidebar() {
           <div className="mt-1 flex items-center">
             <button
               onClick={() => setShowInviteModal(true)} 
-              className={`flex flex-1 items-center justify-center gap-2 h-[34px] rounded-lg text-[12px] transition-colors ${
+              className={`flex flex-1 items-center justify-center gap-2 h-[34px] rounded-lg ml-3 mr-3 text-[12px] transition-colors ${
                 isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
               }`}>
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <span className="text-[12px] font-normal tracking-wider">
-                  Invite
-                </span>
+                <div className={`flex flex-1 items-center justify-center gap-2 h-[30px] border border-dashed rounded-xl ${isDark ? 'border-slate-800' : 'border-slate-300'}`}>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  <span className="text-[12px] font-normal tracking-wider ">
+                    Invite
+                  </span>
+                </div>
+                
             </button>
 
-            <InviteModal
-              isOpen={showInviteModal}
-              workspaceId={workspaceId}
-              onClose={() => setShowInviteModal(false)}
-            />
 
-            <SettingModal
-              isOpen={showSettingModal}
-              workspaceId={workspaceId}
-              workspace={activeWorkspace}
-              onClose={() => setShowSettingModal(false)}
-              onWorkspaceUpdated={handleWorkspaceUpdated}
-              onWorkspaceDeleted={handleWorkspaceDeleted}
-            />
 
             <div className={`w-px h-5 shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
             <button 
@@ -363,16 +443,16 @@ function Sidebar() {
                 className={`group relative flex w-full items-center gap-3.5 px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
                   isActive
                     ? isDark
-                      ? 'rounded-xl bg-[#1e2d45] text-indigo-300'
-                      : 'rounded-xl bg-indigo-50 text-indigo-600'
+                      ? 'rounded-xl bg-white/[0.06] text-indigo-400'
+                      : 'rounded-xl bg-indigo-50 text-indigo-650'
                     : isDark
                       ? 'text-slate-400 hover:text-slate-200 hover:bg-[#0f1724] rounded-lg'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg'
+                      : 'text-slate-650 hover:text-slate-900 hover:bg-slate-200 rounded-lg'
                 }`}
                 aria-pressed={isActive}
               >
                 {isActive && (
-                  <div className="absolute -left-4 top-1/2 h-[60%] w-1.5 -translate-y-1/2 rounded-r-md bg-indigo-500/60" />
+                  <div className="absolute -left-3 top-1/2 h-[60%] w-1 -translate-y-1/2 rounded-r-md bg-[#6366F1]" />
                 )}
                 <span className={isActive ? 'text-indigo-400' : 'text-slate-500'}>
                   {item.icon}
@@ -395,7 +475,7 @@ function Sidebar() {
             <div className='flex gap-1'>
               <button
                 onClick={() => setShowCreateProjectModal(true)}
-                className="text-[#0082E6] hover:text-blue-400 p-1 rounded hover:bg-slate-800/40 transition-colors focus:outline-none"
+                className={`text-[#6366F1] hover:text-indigo-400 p-1 rounded ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-200'} transition-colors focus:outline-none`}
                 title="Create Project"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
@@ -415,13 +495,7 @@ function Sidebar() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <ProjectModal
-                isOpen={showCreateProjectModal}
-                onClose={() =>
-                  setShowCreateProjectModal(false)
-                }
-                onCreate={ handleCreateProject }
-              />
+
             </div>
           </div>
           
@@ -434,6 +508,7 @@ function Sidebar() {
                       navigate(
                         `/workspaces/${workspaceId}/projects/${project._id}`
                       );
+                      onClose?.();
                     }}
                     className={`group flex cursor-pointer items-center gap-3.5 px-3 py-2 text-sm font-semibold transition-colors ${
                       projectId === project._id
@@ -450,7 +525,7 @@ function Sidebar() {
                     ) : (
                       <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0 animate-fade-in" title="Workspace Project" />
                     )}
-                    <span className="truncate">{project.name}</span>
+                    <span className="text-xs truncate">{project.name}</span>
                 </div>                      
               ))}
             </div>
@@ -459,6 +534,35 @@ function Sidebar() {
 
       </div>
     </aside>
+
+    {/* Modals rendered outside the transformed container to prevent squishing */}
+    <WorkspaceModal
+      isOpen={showCreateWorkspaceModal}
+      onClose={() => setShowCreateWorkspaceModal(false)}
+      onCreate={handleCreateWorkspace}
+    />
+
+    <ProjectModal
+      isOpen={showCreateProjectModal}
+      onClose={() => setShowCreateProjectModal(false)}
+      onCreate={handleCreateProject}
+    />
+
+    <InviteModal
+      isOpen={showInviteModal}
+      workspaceId={workspaceId}
+      onClose={() => setShowInviteModal(false)}
+    />
+
+    <SettingModal
+      isOpen={showSettingModal}
+      workspaceId={workspaceId}
+      workspace={activeWorkspace}
+      onClose={() => setShowSettingModal(false)}
+      onWorkspaceUpdated={handleWorkspaceUpdated}
+      onWorkspaceDeleted={handleWorkspaceDeleted}
+    />
+    </>
   );
 }
 

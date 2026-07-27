@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { registerUser, loginUser } = require('../controllers/authController');
+const { registerUser, loginUser, googleCallback, getMe } = require('../controllers/authController');
 const passport = require("passport");
-const { googleCallback } = require("../controllers/authController");
+const { authMiddleware } = require("../middleware/authMiddleware");
 
 router.get(
     "/google",
@@ -24,5 +24,8 @@ router.get(
 // Local 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+
+// Profile
+router.get("/me", authMiddleware, getMe);
 
 module.exports = router;

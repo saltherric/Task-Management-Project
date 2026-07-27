@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { getAttachment, createAttachment, deleteAttachment, downloadAttachment} from '../../services/attachmentApi';
-import { toast } from 'react-toastify';
+import { getAttachment, createAttachment, deleteAttachment, downloadAttachment } from '../../services/attachmentApi';
 import { useSocket } from '../../contexts/SocketContext';
+import { useAlert } from '../../contexts/AlertContext';
 
 export default function TaskAttachments({ taskId, updateField }) {
   const [attachments, setAttachments] = useState([]);
   const [selectedPreviewImage, setSelectedPreviewImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const { socket, isConnected } = useSocket();
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     if (taskId) {
@@ -74,7 +75,7 @@ export default function TaskAttachments({ taskId, updateField }) {
 
   const handleUploadAttachment = async (selectedFile) => {
     if (!selectedFile) {
-      toast.error("Please select a file first");
+      showAlert("Please select a file first", "error");
       return;
     }
 
@@ -86,12 +87,12 @@ export default function TaskAttachments({ taskId, updateField }) {
 
       await createAttachment(taskId, formData);
 
-      toast.success("File uploaded successfully");
+      showAlert("File uploaded successfully", "success");
 
       document.getElementById("fileUpload").value = "";
     } catch (error) {
       console.error(error);
-      toast.error("Upload failed");
+      showAlert("Upload failed", "error");
     } finally {
       setUploading(false);
     }
@@ -104,12 +105,13 @@ export default function TaskAttachments({ taskId, updateField }) {
       const url = data.url;
       const link = document.createElement("a");
       link.href = url;
-      link.download = fileName; 
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
       console.error("Download failed", error);
+      showAlert("Download failed", "error");
     }
   };
 
@@ -121,10 +123,12 @@ export default function TaskAttachments({ taskId, updateField }) {
       );
 
       updateField("attachmentCount", attachments.length - 1);
+      showAlert("Attachment deleted successfully", "success");
     } catch (error) {
       console.error(error);
+      showAlert(error.response?.data?.message || "Failed to delete attachment", "error");
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -179,7 +183,7 @@ export default function TaskAttachments({ taskId, updateField }) {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {isImage ? (
-                    <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 overflow-hidden">
+                    <div className="w-15 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 overflow-hidden">
                       <img
                         src={attachment.fileUrl}
                         alt={attachment.fileName}
@@ -213,11 +217,11 @@ export default function TaskAttachments({ taskId, updateField }) {
                 <div className="flex items-center gap-1">
                   {isImage && (
                     <button
-                      onClick={() =>{
+                      onClick={() => {
                         if (attachment.fileUrl) {
-                            setSelectedPreviewImage(attachment.fileUrl);
-                          }
+                          setSelectedPreviewImage(attachment.fileUrl);
                         }
+                      }
                       }
                       className="p-1.5 hover:bg-slate-200 dark:hover:bg-[#232733] rounded text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-200 transition-colors"
                       title="Preview"
@@ -255,7 +259,7 @@ export default function TaskAttachments({ taskId, updateField }) {
       {/* IMAGE PREVIEW MODAL */}
       {selectedPreviewImage && (
         <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/15 backdrop-blur-[2px] flex items-center justify-center z-50"
           onClick={() => setSelectedPreviewImage(null)}
         >
           <img
@@ -265,7 +269,7 @@ export default function TaskAttachments({ taskId, updateField }) {
             onClick={(e) => e.stopPropagation()}
             onError={(e) => {
               e.target.src = "";
-              toast.error("Image failed to load");
+              showAlert("Image failed to load", "error");
               setSelectedPreviewImage(null);
             }}
           />

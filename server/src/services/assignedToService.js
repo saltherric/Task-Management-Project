@@ -46,6 +46,16 @@ const assignUser = async ({ taskId, userId, currentUserId }) => {
         throw new Error("Workspace not found");
     }
 
+    const member = workspace.members.find(
+        (m) => m.user.toString() === currentUserId.toString()
+    );
+    const userObj = await User.findById(currentUserId);
+    const isAdmin = (member && member.role === "admin") || (userObj && userObj.role === "admin");
+
+    if (!isAdmin) {
+        throw new Error("Access Denied: Only admins can assign or reassign users");
+    }
+
     const isWorkspaceMember = workspace.members.some(
         member => member.user.toString() === userId.toString()
     );
@@ -67,6 +77,9 @@ const assignUser = async ({ taskId, userId, currentUserId }) => {
             $addToSet: {
                 assignedTo: userId,
             },
+            $set: {
+                updatedBy: currentUserId,
+            }
         },
         {
             new: true,
@@ -77,7 +90,10 @@ const assignUser = async ({ taskId, userId, currentUserId }) => {
         .populate("createdBy", "username email avatar")
         .populate("assignedTo", "username email avatar")
         .populate("column", "name")
-        .populate("project", "name");
+        .populate("project", "name")
+        .populate("completedBy", "username email avatar")
+        .populate("updatedBy", "username email avatar")
+        .populate("lastMovedBy", "username email avatar");
 
     const sender = await User.findById(currentUserId).select("username");
 
@@ -112,19 +128,41 @@ const removeAssignee = async ({ taskId, userId, currentUserId }) => {
     if (!task) throw new Error("Task not found");
     const project = await getProjectForUser({ projectId: task.project, userId: currentUserId });
     const workspace = await Workspace.findById(project.workspace);
+    if (!workspace) {
+        throw new Error("Workspace not found");
+    }
+
+    const member = workspace.members.find(
+        (m) => m.user.toString() === currentUserId.toString()
+    );
+    const userObj = await User.findById(currentUserId);
+    const isAdmin = (member && member.role === "admin") || (userObj && userObj.role === "admin");
+
+    if (!isAdmin) {
+        throw new Error("Access Denied: Only admins can assign or reassign users");
+    }
+
     const updatedTask = await Task.findByIdAndUpdate(
       taskId,
       {
         $pull: {
           assignedTo: userId,
         },
+        $set: {
+          updatedBy: currentUserId,
+        }
       },
       {
         new: true,  
       }
     )
-    .populate("assignedTo", "username email")
-    .populate("project", "name");
+    .populate("createdBy", "username email avatar")
+    .populate("assignedTo", "username email avatar")
+    .populate("column", "name")
+    .populate("project", "name")
+    .populate("completedBy", "username email avatar")
+    .populate("updatedBy", "username email avatar")
+    .populate("lastMovedBy", "username email avatar");
 
     const sender = await User.findById(currentUserId).select("username");
     await createNotification({

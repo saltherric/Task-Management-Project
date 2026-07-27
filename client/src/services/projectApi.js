@@ -25,10 +25,22 @@ const updateProject = async (projectId, projectData) => {
     return response.data;
 }
 
+const copyProject = async (projectId) => {
+    const response = await API.post(`/projects/${projectId}/copy`);
+    return response.data;
+}
+
+const deleteProject = async (projectId) => {
+    const response = await API.delete(`/projects/${projectId}`);
+    return response.data;
+}
+
 export {
     getProjects,
     createProject,
     inviteProjectMember,
     removeProjectMember,
-    updateProject
-}
+    updateProject,
+    copyProject,
+    deleteProject
+}

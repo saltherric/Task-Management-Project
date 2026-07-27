@@ -12,10 +12,13 @@ import { updateTask, deleteTask } from "../../services/taskApi";
 import useAutoSave from "../../hooks/useAutoSave";
 import TaskDueDate from "./TaskDueDate";
 import TaskMetaData from "./TaskMetaData";
+import { useAlert } from "../../contexts/AlertContext";
 
 export default function TaskModal({
   task,
   isOpen,
+  isAdmin,
+  columns,
   onClose,
   onUpdateTask,
   onDeleteTask
@@ -25,6 +28,7 @@ export default function TaskModal({
   const [localTask, setLocalTask] = useState(task);
   const [dirtyFields, setDirtyFields] = useState({});
   const [saveStatus, setSaveStatus] = useState("saved");
+  const { showAlert } = useAlert();
 
 
   useEffect(() => {
@@ -56,8 +60,10 @@ export default function TaskModal({
     try {
       await deleteTask(localTask._id);
       onDeleteTask(localTask._id);
+      showAlert("Task deleted successfully.", "success");
     } catch (error) {
       console.error("Failed to delete task", error);
+      showAlert(error.response?.data?.message || "Failed to delete task.", "error");
     }
   };
 
@@ -71,10 +77,10 @@ export default function TaskModal({
       ) {
         return;
       }
-      
+
       try {
         setSaveStatus("saving");
-        
+
         const response = await updateTask(
           localTask._id,
           dirtyFields
@@ -92,6 +98,7 @@ export default function TaskModal({
       } catch (error) {
         console.error(error);
         setSaveStatus("error");
+        showAlert(error.response?.data?.message || "Failed to auto-save task changes.", "error");
       }
     },
     1000
@@ -102,11 +109,10 @@ export default function TaskModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-black/15 backdrop-blur-[2px] flex items-center justify-center">
 
-      <div className={`h-[90vh] w-[95vw] max-w-7xl rounded-xl overflow-hidden flex flex-col transition-colors duration-300 ${
-        isDark ? "bg-slate-900 text-slate-100" : "bg-white text-slate-800 border border-slate-200 shadow-2xl"
-      }`}>
+      <div className={`h-[82vh] w-[calc(100%-2rem)] max-w-5xl rounded-xl overflow-hidden flex flex-col transition-colors duration-300 shadow-2xl ${isDark ? "bg-slate-900 text-slate-100 border border-slate-800/80" : "bg-white text-slate-800 border border-slate-200"
+        }`}>
 
         {/* Top Area */}
         <TaskBadge
@@ -118,15 +124,15 @@ export default function TaskModal({
         />
 
         <TaskHeader
-            task={localTask}
-            updateField={updateField}
+          task={localTask}
+          updateField={updateField}
         />
 
         {/* Body */}
-        <div className="notif-scrollbar grid lg:grid-cols-[1fr_350px] flex-1 overflow-hidden overflow-y-auto p-6">
+        <div className="notif-scrollbar grid lg:grid-cols-[1fr_280px] flex-1 overflow-hidden overflow-y-auto p-6 gap-6">
 
           {/* Left Content */}
-          <div className=" space-y-8 pr-5">
+          <div className="space-y-8">
 
             <TaskDescription
               task={localTask}
@@ -142,17 +148,17 @@ export default function TaskModal({
               taskId={localTask._id}
               updateField={updateField}
             />
-            
+
           </div>
 
           {/* Sidebar */}
-          <aside className={`border-l overflow-y-auto p-5 space-y-6 transition-colors duration-300 ${
-            isDark ? "border-slate-800" : "border-slate-200"
-          }`}>
+          <aside className={`border-t lg:border-t-0 lg:border-l lg:pl-6 pt-6 lg:pt-0 space-y-6 transition-colors duration-300 ${isDark ? "border-slate-800/80" : "border-slate-200"
+            }`}>
 
             <TaskAssignedTo
               task={localTask}
               onTaskUpdate={handleTaskUpdate}
+              isAdmin={isAdmin}
             />
 
             <TaskDueDate

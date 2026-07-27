@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { validateInvite, joinWorkspace } from "../services/inviteApi";
 import { getAuthState } from "../helpers/auth";
+import { useAlert } from "../contexts/AlertContext";
 
 export default function InvitePage() {
   const { token } = useParams();
@@ -20,6 +21,7 @@ export default function InvitePage() {
   const [alreadyMember, setAlreadyMember] = useState(false);
 
   const [joinSuccess, setJoinSuccess] = useState(false);
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     if (!token) return;
@@ -81,6 +83,7 @@ export default function InvitePage() {
       const data = await joinWorkspace(token);
 
       setJoinSuccess(true);
+      showAlert("Successfully joined the workspace!", "success");
 
       setTimeout(() => {
         navigate(`/workspaces/${data.workspace._id}`);
@@ -100,8 +103,9 @@ export default function InvitePage() {
 
       if (message === "You are already a member") {
         setAlreadyMember(true);
+        showAlert("You are already a member of this workspace.", "info");
       } else {
-        alert(message || "Failed to join workspace.");
+        showAlert(message || "Failed to join workspace.", "error");
       }
     } finally {
       setJoining(false);
@@ -116,7 +120,7 @@ export default function InvitePage() {
 
           <div className="relative w-14 h-14 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full border-4 border-slate-800" />
-            <div className="absolute inset-0 rounded-full border-4 border-t-[#0082E6] animate-spin" />
+            <div className="absolute inset-0 rounded-full border-4 border-t-[#6366F1] animate-spin" />
           </div>
 
           <h2 className="text-white text-lg font-bold">
@@ -165,7 +169,7 @@ export default function InvitePage() {
 
           <button
             onClick={() => navigate("/")}
-            className="mt-8 w-full h-12 rounded-xl bg-[#0082E6] hover:bg-blue-600 text-white font-semibold transition"
+            className="mt-8 w-full h-12 rounded-xl bg-[#6366F1] hover:bg-blue-600 text-white font-semibold transition"
           >
             Back to Home
           </button>
@@ -209,7 +213,7 @@ export default function InvitePage() {
 
           <button
             onClick={() => navigate("/")}
-            className="mt-8 w-full h-12 rounded-xl bg-[#0082E6] hover:bg-blue-600 text-white font-semibold transition"
+            className="mt-8 w-full h-12 rounded-xl bg-[#6366F1] hover:bg-blue-600 text-white font-semibold transition"
           >
             Back to Home
           </button>
@@ -248,7 +252,7 @@ export default function InvitePage() {
 
           <p className="text-slate-400 mt-3 leading-relaxed">
             You already belong to
-            <span className="text-[#0082E6] font-semibold">
+            <span className="text-[#6366F1] font-semibold">
               {" "}
               {invite?.workspace?.name}
             </span>.
@@ -258,7 +262,7 @@ export default function InvitePage() {
             onClick={() =>
               navigate(`/workspaces/${invite?.workspace?._id}`)
             }
-            className="mt-8 w-full h-12 rounded-xl bg-[#0082E6] hover:bg-blue-600 transition text-white font-semibold"
+            className="mt-8 w-full h-12 rounded-xl bg-[#6366F1] hover:bg-blue-600 transition text-white font-semibold"
           >
             Open Workspace
           </button>
@@ -299,12 +303,12 @@ export default function InvitePage() {
             You've successfully joined
           </p>
 
-          <h3 className="text-[#0082E6] text-lg font-semibold mt-2">
+          <h3 className="text-[#6366F1] text-lg font-semibold mt-2">
             {invite?.workspace?.name}
           </h3>
 
           <div className="mt-6 flex justify-center">
-            <div className="w-6 h-6 border-2 border-[#0082E6] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-6 h-6 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin"></div>
           </div>
 
           <p className="text-xs text-slate-500 mt-5">
@@ -328,7 +332,7 @@ return (
       {/* Header */}
       <div className="px-8 pt-10 pb-8 text-center border-b border-slate-800">
 
-        <div className="w-16 h-16 rounded-2xl bg-[#0082E6] flex items-center justify-center mx-auto text-white text-2xl font-bold shadow-lg">
+        <div className="w-16 h-16 rounded-2xl bg-[#6366F1] flex items-center justify-center mx-auto text-white text-2xl font-bold shadow-lg">
           {invite?.workspace?.name?.charAt(0)}
         </div>
 
@@ -340,7 +344,7 @@ return (
           Join this workspace and start collaborating.
         </p>
 
-        <h2 className="mt-4 text-xl font-semibold text-[#0082E6]">
+        <h2 className="mt-4 text-xl font-semibold text-[#6366F1]">
           {invite?.workspace?.name}
         </h2>
 
@@ -373,7 +377,7 @@ return (
               Role
             </span>
 
-            <span className="inline-flex items-center rounded-full bg-[#0082E6]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#4EB3FF]">
+            <span className="inline-flex items-center rounded-full bg-[#6366F1]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#4EB3FF]">
               {invite?.role}
             </span>
 
@@ -399,7 +403,7 @@ return (
 
         {/* Info */}
 
-        <div className="mt-6 rounded-xl bg-[#0082E6]/10 border border-[#0082E6]/20 p-4">
+        <div className="mt-6 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 p-4">
 
           <p className="text-sm text-slate-300 leading-relaxed">
             By joining this workspace you'll be able to collaborate with
@@ -416,14 +420,14 @@ return (
             <button
               onClick={handleJoinWorkspace}
               disabled={joining}
-              className="w-full h-12 rounded-xl bg-[#0082E6] hover:bg-blue-600 transition-all text-white font-semibold disabled:opacity-60"
+              className="w-full h-12 rounded-xl bg-[#6366F1] hover:bg-blue-600 transition-all text-white font-semibold disabled:opacity-60"
             >
               {joining ? "Joining..." : "Join Workspace"}
             </button>
           ) : (
             <button
               onClick={handleLogin}
-              className="w-full h-12 rounded-xl bg-[#0082E6] hover:bg-blue-600 transition-all text-white font-semibold"
+              className="w-full h-12 rounded-xl bg-[#6366F1] hover:bg-blue-600 transition-all text-white font-semibold"
             >
               Log in to Join
             </button>

@@ -152,10 +152,10 @@ export default function RichTextEditor({
   }
 
   return (
-    <div className="border border-slate-200 dark:border-[#222429] rounded-xl bg-white dark:bg-[#121316] overflow-hidden">
+    <div className="border border-slate-200 dark:border-[#222429] focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/10 rounded-xl bg-white dark:bg-[#121316] overflow-hidden transition-all duration-300 shadow-xs focus-within:shadow-md">
 
       {/* Toolbar */}
-      <div className=" flex flex-wrap items-center gap-1 p-3 bg-slate-50 dark:bg-[#17181c] border-b border-slate-200 dark:border-[#222429]">
+      <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-50/50 dark:bg-[#16171B]/90 border-b border-slate-200 dark:border-[#222429]">
         <ToolbarButton
           title="Undo"
           disabled={!canRun((chain) => chain.undo())}

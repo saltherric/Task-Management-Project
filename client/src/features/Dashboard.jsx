@@ -2,10 +2,11 @@ import React, { useState, useContext, useEffect } from 'react';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProjects } from '../services/projectApi';
-import { getTasksByProject } from '../services/taskApi';
+import { getTasksByProject, getArchivedTasksByProject } from '../services/taskApi';
 import { useSocket } from '../contexts/SocketContext';
 import { getStoredUserInfo } from '../helpers/auth';
-
+import { Lock, Globe } from 'lucide-react';
+  
 export default function Dashboard() {
   const { theme } = useContext(ThemeContext);
   const isDarkMode = theme === 'dark';
@@ -27,6 +28,14 @@ export default function Dashboard() {
       return 'User';
     }
   });
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+  const greeting = getGreeting();
 
   const { socket, isConnected } = useSocket();
   const currentUser = getStoredUserInfo();
@@ -64,8 +73,11 @@ export default function Dashboard() {
 
         // Also fetch tasks for the new project to populate the dashboard metrics!
         try {
-          const res = await getTasksByProject(updatedProject._id);
-          const projectTasks = res.tasks || [];
+          const [activeRes, archivedRes] = await Promise.all([
+            getTasksByProject(updatedProject._id),
+            getArchivedTasksByProject(updatedProject._id)
+          ]);
+          const projectTasks = [...(activeRes.tasks || []), ...(archivedRes.tasks || [])];
           setTasks((prev) => {
             // Remove existing tasks for this project, then add new ones
             const filtered = prev.filter(t => {
@@ -109,8 +121,11 @@ export default function Dashboard() {
 
         // Fetch tasks for all projects in parallel
         const tasksPromises = projectsList.map(project =>
-          getTasksByProject(project._id)
-            .then(res => res.tasks || [])
+          Promise.all([
+            getTasksByProject(project._id).then(res => res.tasks || []),
+            getArchivedTasksByProject(project._id).then(res => res.tasks || [])
+          ])
+            .then(([active, archived]) => [...active, ...archived])
             .catch(err => {
               console.error(`Failed to fetch tasks for project ${project._id}:`, err);
               return [];
@@ -218,14 +233,14 @@ export default function Dashboard() {
 
   const completedDateStart = getStartDateForTimeRange();
   const completedCountForRange = tasks.filter(t => {
-    if (t.status !== 'done' || t.isArchived) return false;
+    if (t.status !== 'done') return false;
     const completedDate = t.completedAt ? new Date(t.completedAt) : new Date(t.updatedAt);
     return completedDate >= completedDateStart;
   }).length;
 
   const prevPeriod = getPreviousPeriodStartDate();
   const prevCompletedCount = tasks.filter(t => {
-    if (t.status !== 'done' || t.isArchived) return false;
+    if (t.status !== 'done') return false;
     const completedDate = t.completedAt ? new Date(t.completedAt) : new Date(t.updatedAt);
     return completedDate >= prevPeriod.start && completedDate < prevPeriod.end;
   }).length;
@@ -260,13 +275,13 @@ export default function Dashboard() {
   const overdueTrend = overdueDiff > 0 ? `+${overdueDiff}` : overdueDiff < 0 ? `${overdueDiff}` : '0';
   const overdueTrendIsPositive = overdueDiff <= 0;
 
-  const totalTasksCount = tasks.filter(t => !t.isArchived).length;
-  const completedTasksCount = tasks.filter(t => t.status === 'done' && !t.isArchived).length;
+  const totalTasksCount = tasks.length;
+  const completedTasksCount = tasks.filter(t => t.status === 'done').length;
   const completionRate = totalTasksCount > 0 ? ((completedTasksCount / totalTasksCount) * 10).toFixed(1) : '0.0';
 
-  const prevTotalTasksCount = tasks.filter(t => !t.isArchived && new Date(t.createdAt) < completedDateStart).length;
+  const prevTotalTasksCount = tasks.filter(t => new Date(t.createdAt) < completedDateStart).length;
   const prevCompletedTasksCount = tasks.filter(t => {
-    if (t.status !== 'done' || t.isArchived) return false;
+    if (t.status !== 'done') return false;
     const completedDate = t.completedAt ? new Date(t.completedAt) : new Date(t.updatedAt);
     return completedDate < completedDateStart;
   }).length;
@@ -284,7 +299,7 @@ export default function Dashboard() {
       isPositive: true,
       iconBg: 'bg-blue-500/10 text-blue-500 dark:bg-blue-500/15',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
         </svg>
       )
@@ -296,7 +311,7 @@ export default function Dashboard() {
       isPositive: completedTrendIsPositive,
       iconBg: 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/15',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       )
@@ -308,7 +323,7 @@ export default function Dashboard() {
       isPositive: overdueTrendIsPositive,
       iconBg: 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/15',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       )
@@ -320,7 +335,7 @@ export default function Dashboard() {
       isPositive: velocityTrendIsPositive,
       iconBg: 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-500/15',
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
       )
@@ -511,8 +526,8 @@ export default function Dashboard() {
       {/* 1. HEADER ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Good afternoon, {userName}</h1>
-          <p className={`text-xs md:text-sm mt-1.5 font-medium ${isDarkMode ? 'text-slate-450' : 'text-slate-550'}`}>
+          <h1 className="text-2xl md:text-3xl font-medium tracking-tight">{greeting}, {userName}</h1>
+          <p className={`text-xs md:text-sm mt-1.5 font-normal ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             Here's what's happening across your workspace today.
           </p>
         </div>
@@ -566,17 +581,17 @@ export default function Dashboard() {
               }`}
           >
             <div className="flex items-center justify-between">
-              <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-450' : 'text-slate-550'}`}>
+              <span className={`text-sm font-normal  ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {m.label}
               </span>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${m.iconBg}`}>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${m.iconBg}`}>
                 {m.icon}
               </div>
             </div>
 
             <div className="flex items-baseline gap-2 mt-4">
-              <span className="text-2xl md:text-3xl font-black tracking-tight">{m.value}</span>
-              <span className={`text-xs font-bold ${
+              <span className="text-2xl md:text-3xl font-medium tracking-tight">{m.value}</span>
+              <span className={`text-xs font-normal ${
                 m.isPositive
                   ? 'text-emerald-500 dark:text-emerald-400'
                   : 'text-rose-500 dark:text-rose-450'
@@ -598,12 +613,12 @@ export default function Dashboard() {
           }`}>
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <h3 className="text-sm font-bold tracking-tight">Throughput</h3>
+              <h3 className="text-base font-medium tracking-tight">Throughput</h3>
 
               {/* Legends */}
-              <div className="flex items-center gap-4 text-[11px] font-semibold text-slate-450">
+              <div className="flex items-center gap-4 text-[11px] font-medium text-slate-450">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#0082E6]" />
+                  <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
                   <span>Done</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -612,7 +627,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <p className={`text-[11px] font-medium ${isDarkMode ? 'text-slate-550' : 'text-slate-450'}`}>
+            <p className={`text-[11px] font-normal ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               Tasks created vs completed
             </p>
           </div>
@@ -639,8 +654,8 @@ export default function Dashboard() {
                 <defs>
                   {/* "Done" (Blue) Area Gradient */}
                   <linearGradient id="doneGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0082E6" stopOpacity="0.18" />
-                    <stop offset="100%" stopColor="#0082E6" stopOpacity="0.0" />
+                    <stop offset="0%" stopColor="#6366F1" stopOpacity="0.18" />
+                    <stop offset="100%" stopColor="#6366F1" stopOpacity="0.0" />
                   </linearGradient>
 
                   {/* "Created" (Slate) Area Gradient */}
@@ -671,7 +686,7 @@ export default function Dashboard() {
                 <path
                   d={donePaths.linePath}
                   fill="none"
-                  stroke="#0082E6"
+                  stroke="#6366F1"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 />
@@ -699,9 +714,9 @@ export default function Dashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21L8.188 15.904L3 15L8.188 14.096L9 9L9.813 14.096L15 15L9.813 15.904Z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.071 4.929a10 10 0 00-14.142 0M19.071 19.071a10 10 0 000-14.142" />
               </svg>
-              <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">Smart priority</h3>
+              <h3 className="text-base font-medium tracking-tight text-slate-900 dark:text-white">Smart priority</h3>
             </div>
-            <p className={`text-[11px] font-medium ${isDarkMode ? 'text-slate-550' : 'text-slate-450'}`}>
+            <p className={`text-[11px] font-normal ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               Suggested order based on deadlines and effort.
             </p>
           </div>
@@ -710,7 +725,7 @@ export default function Dashboard() {
           <div className="flex-1 mt-6 flex flex-col gap-3 overflow-y-auto max-h-[250px] pr-1">
             {sortedPriorityTasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                <p className="text-xs font-semibold text-slate-450 dark:text-slate-550">
+                <p className="text-xs font-medium text-slate-450 dark:text-slate-550">
                   No active tasks to prioritize!
                 </p>
                 <p className="text-[10px] text-slate-400 mt-1">
@@ -757,7 +772,7 @@ export default function Dashboard() {
         }`}>
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold tracking-tight">Active projects</h3>
+              <h3 className="text-sm font-medium tracking-tight">Active projects</h3>
             </div>
 
             <div className="flex flex-col gap-6 mt-4">
@@ -772,11 +787,15 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-xs font-bold truncate">{p.name}</span>
                         {p.visibility === 'private' ? (
-                          <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-bold border shrink-0 ${isDarkMode ? 'bg-amber-950/30 text-amber-400 border-slate-800' : 'bg-amber-50 text-amber-650 border-slate-200'}`}>Private</span>
+                          <span className={`px-1.5 py-0.5 rounded-md border shrink-0 flex items-center justify-center ${isDarkMode ? 'bg-amber-950/30 text-amber-400 border-slate-800' : 'bg-amber-50 text-amber-650 border-slate-200'}`} title="Private">
+                            <Lock className="h-3 w-3" />
+                          </span>
                         ) : (
-                          <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-bold border shrink-0 ${isDarkMode ? 'bg-slate-900/60 text-slate-400 border-slate-800' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>Workspace</span>
+                          <span className={`px-1.5 py-0.5 rounded-md border shrink-0 flex items-center justify-center ${isDarkMode ? 'bg-slate-900/60 text-slate-400 border-slate-800' : 'bg-slate-100 text-slate-500 border-slate-200'}`} title="Workspace">
+                            <Globe className="h-3 w-3" />
+                          </span>
                         )}
-                        <span className="text-[10px] text-slate-400 font-semibold shrink-0">{p.dueDate}</span>
+                        <span className="text-[10px] text-slate-400 font-medium shrink-0">{p.dueDate}</span>
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
@@ -805,7 +824,7 @@ export default function Dashboard() {
                       isDarkMode ? 'bg-slate-800' : 'bg-slate-100'
                     }`}>
                       <div 
-                        className="h-full bg-[#0082E6] rounded-full transition-all duration-500" 
+                        className="h-full bg-[#6366F1] rounded-full transition-all duration-500" 
                         style={{ width: `${p.progress}%` }} 
                       />
                     </div>
@@ -821,11 +840,11 @@ export default function Dashboard() {
           isDarkMode ? 'bg-[#1F1F23]/40 border-slate-800' : 'bg-white border-slate-200'
         }`}>
           <div>
-            <h3 className="text-sm font-bold tracking-tight mb-4">Upcoming deadlines</h3>
+            <h3 className="text-base font-medium tracking-tight mb-4">Upcoming deadlines</h3>
             
             <div className="flex flex-col gap-4 mt-2">
               {upcomingDeadlines.length === 0 ? (
-                <div className="text-center py-6 text-xs text-slate-450">
+                <div className="text-center font-normal py-6 text-xs text-slate-400">
                   No upcoming deadlines.
                 </div>
               ) : (

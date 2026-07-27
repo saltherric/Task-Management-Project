@@ -12,24 +12,28 @@ export default function TaskHeader({ task, updateField }) {
   const statusConfig = {
     todo: {
         label: "To do",
+        dotClass: "bg-slate-400",
         bg: isDark ? "bg-slate-500/10" : "bg-slate-100",
         border: isDark ? "border-slate-500/20" : "border-slate-250",
         text: isDark ? "text-slate-300" : "text-slate-600"
     },
     inprogress: {
         label: "In Progress",
+        dotClass: "bg-blue-500",
         bg: isDark ? "bg-blue-500/10" : "bg-blue-50",
         border: isDark ? "border-blue-500/20" : "border-blue-200/50",
         text: isDark ? "text-blue-300" : "text-blue-600"
     },
     review: {
         label: "Review",
+        dotClass: "bg-amber-500",
         bg: isDark ? "bg-amber-500/10" : "bg-amber-50",
         border: isDark ? "border-amber-500/20" : "border-amber-200/50",
         text: isDark ? "text-amber-300" : "text-amber-600"
     },
     done: {
         label: "Done",
+        dotClass: "bg-emerald-500",
         bg: isDark ? "bg-emerald-500/20" : "bg-emerald-50",
         border: isDark ? "border-emerald-500/20" : "border-emerald-250/50",
         text: isDark ? "text-emerald-300" : "text-emerald-600"
@@ -118,16 +122,18 @@ export default function TaskHeader({ task, updateField }) {
                 }
                 className={`
                   flex items-center gap-1.5
-                  px-2 py-0.5
-                  rounded-md
+                  px-2.5 py-0.5
+                  rounded-lg
                   text-xs
                   font-semibold
                   border
+                  hover:opacity-90 transition-all cursor-pointer
                   ${statusConfig[task.status]?.bg}
                   ${statusConfig[task.status]?.border}
                   ${statusConfig[task.status]?.text}
                 `}
               >
+                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[task.status]?.dotClass}`} />
                 <span>
                   {
                     statusConfig[
@@ -135,7 +141,7 @@ export default function TaskHeader({ task, updateField }) {
                     ]?.label
                   }
                 </span>
-
+                <i className="fa-solid fa-chevron-down text-[8px] opacity-70 ml-0.5" />
               </button>
 
               {activeDropdown ===
@@ -167,12 +173,16 @@ export default function TaskHeader({ task, updateField }) {
                         dark:text-neutral-300
                         hover:bg-slate-100
                         dark:hover:bg-[#1E212A]
+                        flex items-center gap-2
                       "
                     >
-                      {
-                        statusConfig[key]
-                          .label
-                      }
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[key].dotClass}`} />
+                      <span>
+                        {
+                          statusConfig[key]
+                            .label
+                        }
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -194,11 +204,12 @@ export default function TaskHeader({ task, updateField }) {
                 }
                 className={`
                   flex items-center gap-1.5
-                  px-2 py-0.5
-                  rounded-md
+                  px-2.5 py-0.5
+                  rounded-lg
                   text-xs
                   font-semibold
                   border
+                  hover:opacity-90 transition-all cursor-pointer
                   ${priorityConfig[task.priority]?.bg}
                   ${priorityConfig[task.priority]?.border}
                   ${priorityConfig[task.priority]?.text}
@@ -211,7 +222,7 @@ export default function TaskHeader({ task, updateField }) {
                     ]?.label
                   }
                 </span>
-
+                <i className="fa-solid fa-chevron-down text-[8px] opacity-70 ml-0.5" />
               </button>
 
               {activeDropdown ===
@@ -347,21 +358,18 @@ export default function TaskHeader({ task, updateField }) {
         {/* Right */}
         <div
           className="
-            bg-slate-100
-            dark:bg-[#171A21]
+            flex items-center gap-1.5
+            bg-indigo-500/10
+            dark:bg-indigo-500/15
             border
-            border-slate-200
-            dark:border-[#272B35]
+            border-indigo-500/25
             px-3 py-1.5
             rounded-xl
             shrink-0
           "
         >
-          <span className="text-xs text-neutral-400">
-            Project:
-          </span>
-
-          <span className="ml-2 text-xs text-indigo-400 font-bold uppercase">
+          <i className="fa-solid fa-folder text-indigo-500 dark:text-indigo-400 text-xs" />
+          <span className="text-[10px] uppercase font-bold text-indigo-500 dark:text-indigo-350 tracking-wider">
             {task.project.name}
           </span>
         </div>

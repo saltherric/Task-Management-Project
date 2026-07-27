@@ -121,6 +121,31 @@ body, html {
   color: var(--color-card) !important;
 }
 
+/* Google Login Button */
+.google-login-button.ant-btn {
+  width: 100% !important;
+  height: auto !important;
+  padding: 12px !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 12px !important;
+  background-color: var(--color-card) !important;
+  color: var(--color-text) !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.05) !important;
+}
+
+.google-login-button.ant-btn:hover {
+  background-color: color-mix(in srgb, var(--color-card) 95%, var(--color-primary)) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: var(--color-text) !important;
+}
+
 .register-text a {
   color: var(--color-primary);
   text-decoration: none;

@@ -42,11 +42,47 @@ const createNotification = async ({
         recipientUser.telegram.chatId
     ) {
         try {
+            const populatedNotification = await Notification.findById(notification._id)
+                .populate("workspace")
+                .populate("project")
+                .populate({
+                    path: "task",
+                    populate: {
+                        path: "assignedTo",
+                        select: "username",
+                    }
+                })
+                .populate("sender")
+                .populate("recipient");
+
+            let commentText = "";
+            if (type === "COMMENT_ADDED" && metadata?.commentId) {
+                try {
+                    const Comment = require("../models/Comment");
+                    const commentDoc = await Comment.findById(metadata.commentId);
+                    if (commentDoc) {
+                        commentText = commentDoc.content;
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch comment content for Telegram:", err);
+                }
+            }
+
             await sendTelegramMessage({
                 chatId: recipientUser.telegram.chatId,
                 title,
                 message,
                 actionUrl,
+                type,
+                workspaceName: populatedNotification.workspace?.name,
+                projectName: populatedNotification.project?.name,
+                taskTitle: populatedNotification.task?.title,
+                taskPriority: populatedNotification.task?.priority,
+                taskAssignees: populatedNotification.task?.assignedTo?.map(u => u.username),
+                senderName: populatedNotification.sender?.username,
+                recipientName: populatedNotification.recipient?.username,
+                commentText,
+                metadata,
             });
 
             notification.delivery.telegram.sent = true;

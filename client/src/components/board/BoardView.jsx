@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
-import { getProjects, updateProject } from '../../services/projectApi';
+import { getProjects, updateProject, copyProject, deleteProject } from '../../services/projectApi';
 import { getTasksByProject, moveTask, createTask } from '../../services/taskApi';
 import { getStoredUserInfo } from '../../helpers/auth';
+import getColumnDotProps from '../../helpers/getDotColors';
 import getColumns from '../../services/columnApi';
 import TaskModal from '../taskModal/TaskModal';
-import AddTaskModal from './AddTaskModal';
 import InviteTaskModal from './InviteTaskModal';
 import MenuModal from './MenuModal';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { useSocket } from '../../contexts/SocketContext';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { getWorkspaceMembers } from '../../services/workspaceApi';
 import { UserPlus, MoreVertical } from 'lucide-react';
+import { useAlert } from '../../contexts/AlertContext';
 
 function Board() {
 
@@ -26,14 +28,41 @@ function Board() {
   const [members, setMembers] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [activeComposerColumnId, setActiveComposerColumnId] = useState(null);
+  const [newCardTitle, setNewCardTitle] = useState("");
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
-  const [selectedColumn, setSelectedColumn] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
   const { socket, isConnected, joinWorkspace, leaveWorkspace } = useSocket();
+  const { showAlert } = useAlert();
+
+  const showMessage = (text, type = 'info') => {
+    showAlert(text, type);
+  };
+
+  const currentUser = useMemo(() => getStoredUserInfo(), []);
+  const currentUserId = currentUser?._id || currentUser?.id;
+
+  const isUserAdmin = useMemo(() => {
+    const match = members.find(m => String(m._id || m.id) === String(currentUserId));
+    return (match?.role === 'admin') || (currentUser?.role === 'admin');
+  }, [members, currentUserId, currentUser]);
+
+  const canMoveTask = (task) => {
+    if (!task) return false;
+    // 1. Check if user is workspace admin or global admin
+    if (isUserAdmin) return true;
+
+    // 2. Check if user is assigned to this task
+    const isAssigned = (task.assignedTo || []).some(user => String(user._id || user.id || user) === String(currentUserId));
+    if (isAssigned) return true;
+
+    return false;
+  };
 
   useEffect(() => {
-    if(projectId && workspaceId){
+    if (projectId && workspaceId) {
       fetchProjects(workspaceId);
       fetchColumns(projectId);
       fetchTasks(projectId);
@@ -59,7 +88,7 @@ function Board() {
       console.error("Failed to fetch workspace members:", error);
     }
   };
-  
+
   const activeProject = projects.find(p => String(p._id) === String(projectId));
 
   const fetchColumns = async (projectId) => {
@@ -96,26 +125,34 @@ function Board() {
 
   // HTML5 Drag and Drop Handlers
   const handleDragStart = (e, taskId) => {
+    const task = tasks.find(t => String(t._id || t.id) === String(taskId));
+    if (!canMoveTask(task)) {
+      e.preventDefault();
+      showMessage("Only admins and assigned users can move tasks.", "warning");
+      return;
+    }
     setDraggedTaskId(taskId);
     e.dataTransfer.setData("text/plain", taskId);
     e.dataTransfer.effectAllowed = "move";
-  };   
+  };
 
   const handleDragOver = (e) => {
     e.preventDefault();
   };
 
-  const handleDrop = async (e, columnId) => {
-    e.preventDefault();
-
-    const taskId = e.dataTransfer.getData("text/plain");
+  const executeTaskMove = async (taskId, columnId) => {
+    const task = tasks.find(t => String(t._id || t.id) === String(taskId));
+    if (!canMoveTask(task)) {
+      showMessage("Only admins and assigned users can move tasks.", "warning");
+      return;
+    }
 
     // optimistic update
     setTasks(prev =>
-      prev.map(task =>
-        task._id === taskId
-          ? { ...task, column: columnId }
-          : task
+      prev.map(t =>
+        String(t._id || t.id) === String(taskId)
+          ? { ...t, column: columnId }
+          : t
       )
     );
 
@@ -123,22 +160,34 @@ function Board() {
       await moveTask(taskId, columnId);
     } catch (error) {
       console.error(error);
+      const backendMessage = error.response?.data?.message || "Failed to move task";
+      showMessage(backendMessage, "error");
 
       // reload if update failed
       fetchTasks(projectId);
     }
   };
 
-  const handleCreateTask = async ( formData ) => {
+  const handleDrop = async (e, columnId) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData("text/plain");
+    if (taskId) {
+      executeTaskMove(taskId, columnId);
+    }
+  };
+
+  const handleCreateInlineTask = async (columnId) => {
+    const title = newCardTitle.trim();
+    if (!title) return;
+
     try {
       const response = await createTask({
-        ...formData,
+        title,
         project: projectId,
-        column: selectedColumn,
+        column: columnId,
       });
       const createdTask = response?.task ?? response;
       setTasks((prev) => {
-        // avoid inserting duplicates if socket also emits the created task
         const exists = createdTask?._id
           ? prev.some(t => t._id === createdTask._id)
           : createdTask?.id
@@ -150,9 +199,11 @@ function Board() {
         return [...prev, createdTask];
       });
 
-      setShowCreateTaskModal(false);
+      setNewCardTitle("");
+      setActiveComposerColumnId(null);
     } catch (error) {
       console.error(error);
+      showMessage("Failed to create task", "error");
     }
   };
 
@@ -175,6 +226,46 @@ function Board() {
       }
     } catch (error) {
       console.error("Failed to update project visibility:", error);
+    }
+  };
+
+  const handleCopyProject = async () => {
+    try {
+      const response = await copyProject(projectId);
+      if (response.success && response.project) {
+        setIsMenuModalOpen(false);
+        navigate(`/workspaces/${workspaceId}/projects/${response.project._id}`);
+        showMessage("Project copied successfully", "success");
+      } else {
+        showMessage("Failed to copy project", "error");
+      }
+    } catch (error) {
+      console.error("Failed to copy project/board:", error);
+      showMessage("Failed to copy project", "error");
+    }
+  };
+
+  const handleDeleteProject = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDeleteProject = async () => {
+    setIsDeletingProject(true);
+    try {
+      const response = await deleteProject(projectId);
+      if (response.success) {
+        setIsDeleteModalOpen(false);
+        setIsMenuModalOpen(false);
+        showMessage("Project deleted successfully", "success");
+        navigate(`/workspaces/${workspaceId}`);
+      } else {
+        showMessage("Failed to delete project", "error");
+      }
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      showMessage(error.response?.data?.message || "Failed to delete project", "error");
+    } finally {
+      setIsDeletingProject(false);
     }
   };
 
@@ -236,7 +327,7 @@ function Board() {
       setSelectedTask((prev) => {
         if (!prev) return prev;
         if (prev._id !== incomingTask._id) return prev;
-        
+
         return incomingTask;
       });
     };
@@ -315,6 +406,13 @@ function Board() {
       }
     };
 
+    const handleProjectDeletedEvent = (payload) => {
+      if (String(payload.projectId) === String(projectId)) {
+        showMessage("This project has been deleted.", "warning");
+        navigate(`/workspaces/${workspaceId}`);
+      }
+    };
+
     registerWorkspaceRoom();
     socket.on("task:created", handleTaskCreated);
     socket.on("task:updated", handleTaskUpdatedEvent);
@@ -323,6 +421,7 @@ function Board() {
     socket.on("task:archived", handleTaskArchivedEvent);
     socket.on("task:unarchived", handleTaskUnarchivedEvent);
     socket.on("project:updated", handleProjectUpdatedEvent);
+    socket.on("project:deleted", handleProjectDeletedEvent);
 
     return () => {
       isMounted = false;
@@ -334,12 +433,14 @@ function Board() {
       socket.off("task:archived", handleTaskArchivedEvent);
       socket.off("task:unarchived", handleTaskUnarchivedEvent);
       socket.off("project:updated", handleProjectUpdatedEvent);
+      socket.off("project:deleted", handleProjectDeletedEvent);
     };
+
   }, [socket, isConnected, workspaceId, projectId, joinWorkspace, leaveWorkspace]);
 
   const projectMembers = useMemo(() => {
     if (!activeProject) return [];
-    
+
     if (activeProject.visibility === 'workspace') {
       return members;
     }
@@ -366,22 +467,19 @@ function Board() {
     });
   }, [activeProject, members]);
 
-  const openAddTaskModal = (columnId) => {
-    setSelectedColumn(columnId);
-    setShowCreateTaskModal(true);
-  };
+
 
   return (
     <div className={`h-full w-full p-6 md:p-5 overflow-hidden transition-colors duration-300 ${isDark ? 'bg-[#090D16] text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       <div className="h-full max-w-7xl mx-auto flex flex-col">
-        
+
         {/* Board Title Area */}
         <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-3.5 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
           <div>
-            <h1 className={`text-3xl font-extrabold tracking-tight flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h1 className={`text-3xl font-bold tracking-tight flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {activeProject?.name}
             </h1>
-            <p className={`text-xs font-medium mt-1 ${isDark ? 'text-slate-500' : 'text-slate-450'}`}>Active Scrum Board</p>
+            <p className={`text-xs font-medium mt-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Active Scrum Board</p>
           </div>
 
           {/* Avatar and Info Row */}
@@ -404,8 +502,8 @@ function Board() {
                     title={username}
                   />
                 ) : (
-                  <div 
-                    key={member._id || idx} 
+                  <div
+                    key={member._id || idx}
                     className={`flex h-8 w-8 rounded-full ring-2 text-xs font-bold flex items-center justify-center cursor-default ${isDark ? 'ring-[#090D16] bg-slate-800 text-slate-300' : 'ring-slate-50 bg-slate-200 text-slate-700'}`}
                     title={username}
                   >
@@ -414,7 +512,7 @@ function Board() {
                 );
               })}
               {projectMembers.length > 4 && (
-                <div 
+                <div
                   className={`flex h-8 w-8 rounded-full ring-2 text-xs font-bold flex items-center justify-center cursor-default ${isDark ? 'ring-[#090D16] bg-slate-800 text-slate-300' : 'ring-slate-50 bg-slate-200 text-slate-700'}`}
                   title={`${projectMembers.length - 4} more members`}
                 >
@@ -426,14 +524,14 @@ function Board() {
             <span className={`w-[1px] h-6 mx-1 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
 
             <div className="flex items-center gap-1.5">
-              <button 
+              <button
                 onClick={() => setIsInviteModalOpen(true)}
                 className={`p-1.5 rounded-xl transition-all duration-200 ${isDark ? 'text-slate-400 hover:text-indigo-400 hover:bg-slate-900 border border-slate-800/40' : 'text-slate-500 hover:text-indigo-650 hover:bg-slate-100 border border-slate-200/50'}`}
                 title="Invite Members"
               >
                 <UserPlus className="w-4 h-4" />
               </button>
-              <button 
+              <button
                 onClick={() => setIsMenuModalOpen(true)}
                 className={`p-1.5 rounded-xl transition-all duration-200 ${isDark ? 'text-slate-400 hover:text-indigo-400 hover:bg-slate-900 border border-slate-800/40' : 'text-slate-500 hover:text-indigo-650 hover:bg-slate-100 border border-slate-200/50'}`}
                 title="Board Settings"
@@ -447,7 +545,7 @@ function Board() {
         </div>
 
         {/* Kanban Board Grid */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 pt-3 overflow-hidden">
+        <div className="flex-1 flex overflow-x-auto gap-5 pt-3 pb-4 min-h-0 lg:grid lg:grid-cols-4 lg:overflow-hidden notif-scrollbar">
           {columns.map((col) => {
             const columnTasks = tasks.filter((task) => {
               const taskColumnId =
@@ -459,24 +557,35 @@ function Board() {
             });
 
             return (
-              <div 
+              <div
                 key={col._id}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, col._id)}
-                className={`border rounded-2xl p-4 h-full min-h-0 flex flex-col transition-colors duration-300 ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'}`}
+                className={`border rounded-2xl p-4 h-full min-h-0 flex flex-col transition-colors duration-300 w-[280px] sm:w-[320px] shrink-0 lg:w-auto lg:flex-1 lg:shrink ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-gray-100 border-slate-200/80 shadow-sm'}`}
               >
                 {/* Column Header */}
                 <div className={`flex items-center justify-between mb-4 pb-2 border-b ${isDark ? 'border-slate-900' : 'border-slate-100'}`}>
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${col.dotColor}`} />
+                    {(() => {
+                      const dotProps = getColumnDotProps(col);
+                      return (
+                        <span
+                          className={`w-2 h-2 rounded-full ${dotProps.className}`}
+                          style={dotProps.style}
+                        />
+                      );
+                    })()}
                     <span className={`text-xs font-bold tracking-wider uppercase ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{col.name}</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
                       {columnTasks.length}
                     </span>
                   </div>
-                  <button 
-                    onClick={() => openAddTaskModal(col._id)}
-                    className={`p-1 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-indigo-400 hover:bg-slate-900' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'}`}
+                  <button
+                    onClick={() => {
+                      setActiveComposerColumnId(col._id);
+                      setNewCardTitle("");
+                    }}
+                    className={`p-1 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-indigo-400 hover:bg-slate-900' : 'text-slate-400 hover:text-indigo-650 hover:bg-slate-100'}`}
                     title="Add task to column"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -488,52 +597,93 @@ function Board() {
                 {/* Task Stack */}
                 <div className="space-y-3 flex-1 overflow-y-auto pr-0.5 scrollbar-thin">
                   {columnTasks.map((task, index) => (
-                    <TaskCard 
+                    <TaskCard
                       key={task._id || task.id || `${col._id}-task-${index}`}
-                      task={task} 
-                      onDragStart={handleDragStart} 
+                      task={task}
+                      isDraggable={canMoveTask(task)}
+                      onDragStart={handleDragStart}
                       onClick={handleTaskClick}
+                      columns={columns}
+                      onMoveTask={executeTaskMove}
                     />
                   ))}
-                  {columnTasks.length === 0 && (
-                    <div className={`text-center py-10 border border-dashed rounded-xl ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+
+                  {/* Inline Composer */}
+                  {activeComposerColumnId === col._id && (
+                    <div className={`p-3 rounded-2xl border shadow-sm space-y-3 animate-fade-in ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
+                      }`}>
+                      <textarea
+                        rows={2}
+                        value={newCardTitle}
+                        onChange={(e) => setNewCardTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleCreateInlineTask(col._id);
+                          }
+                          if (e.key === 'Escape') {
+                            setActiveComposerColumnId(null);
+                          }
+                        }}
+                        placeholder="Enter card title..."
+                        className={`w-full resize-none text-xs rounded-xl px-3 py-2 outline-none border focus:ring-2 transition-all ${isDark
+                            ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500 focus:border-blue-500/60 focus:ring-blue-500/20'
+                            : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-blue-500/60 focus:ring-blue-500/20'
+                          }`}
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleCreateInlineTask(col._id)}
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-gradient-to-r from-indigo-600 to-indigo-600 text-white shadow-md hover:opacity-90 transition-all cursor-pointer"
+                        >
+                          Add a card
+                        </button>
+                        <button
+                          onClick={() => setActiveComposerColumnId(null)}
+                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/40' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
+                            }`}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {columnTasks.length === 0 && activeComposerColumnId !== col._id && (
+                    <div className={`text-center py-10 border border-dashed rounded-xl ${isDark ? 'border-slate-800' : 'border-slate-300'}`}>
                       <p className={`text-[11px] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Drop tasks here</p>
                     </div>
                   )}
                 </div>
 
                 {/* Bottom Column Quick Add Action Button */}
-                <button
-                  onClick={() => openAddTaskModal(col._id)}
-                  className={`w-full mt-4 py-2 rounded-xl border border-dashed text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${isDark ? 'border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700 hover:bg-slate-900/20' : 'border-slate-200 text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50'}`}
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add task
-                </button>
+                {activeComposerColumnId !== col._id && (
+                  <button
+                    onClick={() => {
+                      setActiveComposerColumnId(col._id);
+                      setNewCardTitle("");
+                    }}
+                    className={`w-full mt-4 py-2 rounded-xl border border-dashed text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${isDark ? 'border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700 hover:bg-slate-900/20' : 'border-slate-200 text-slate-500 hover:text-slate-700 hover:border-slate-300 hover:bg-slate-50'}`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add task
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
       </div>
-        
-      {/* Add task Modal */}
-      <AddTaskModal
-        isOpen={showCreateTaskModal}
-        onClose={() => {
-          setShowCreateTaskModal(false);
-          setSelectedColumn(null);
-        }}
-        projectId={projectId}
-        columnId={selectedColumn}
-        onCreate={handleCreateTask}
-      />
 
       {/* Task Modal */}
-      <TaskModal 
+      <TaskModal
         task={selectedTask}
         isOpen={isModalOpen}
+        isAdmin={isUserAdmin}
+        columns={columns}
         onClose={() => {
           setIsModalOpen(false);
           setSelectedTask(null);
@@ -566,8 +716,18 @@ function Board() {
         }}
         onChangeVisibility={handleUpdateVisibility}
         onViewArchived={() => console.log('View archived')}
-        onCopyBoard={() => console.log('Copy board')}
-        onDeleteProject={() => console.log('Delete project')}
+        onCopyBoard={handleCopyProject}
+        onDeleteProject={handleDeleteProject}
+      />
+
+      {/* Confirm Project Deletion Modal */}
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDeleteProject}
+        projectName={activeProject?.name || ''}
+        isDark={isDark}
+        isDeleting={isDeletingProject}
       />
     </div>
   );
@@ -575,10 +735,10 @@ function Board() {
 export default Board;
 
 // Specialized Inner Card Component
-function TaskCard({ task, onDragStart, onClick }) {
+function TaskCard({ task, onDragStart, onClick, isDraggable, columns, onMoveTask }) {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === 'dark';
-  
+
   const getTagStyles = (tag) => {
     if (isDark) {
       switch (tag) {
@@ -643,10 +803,10 @@ function TaskCard({ task, onDragStart, onClick }) {
 
   return (
     <div
-      draggable
+      draggable={isDraggable}
       onDragStart={(e) => onDragStart(e, task._id)}
       onClick={() => onClick(task)}
-      className={`group p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing relative border ${isDark ? 'bg-slate-900 hover:bg-slate-900/80 border-slate-800 hover:border-slate-700' : 'bg-white hover:bg-slate-50/55 border-slate-200 hover:border-slate-300'}`}
+      className={`group p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} relative border ${isDark ? 'bg-slate-900 hover:bg-slate-900/80 border-slate-800 hover:border-slate-700' : 'bg-white hover:bg-slate-50/55 border-slate-200 hover:border-slate-300'}`}
     >
       {/* Task Tags */}
       <div className="flex flex-wrap gap-1 pb-2.5">
@@ -661,7 +821,7 @@ function TaskCard({ task, onDragStart, onClick }) {
       </div>
 
       {/* Task Title */}
-      <h3 className={`text-xs font-bold leading-normal tracking-wide transition-colors mb-4 ${isDark ? 'text-slate-100 group-hover:text-indigo-400' : 'text-slate-800 group-hover:text-indigo-600'}`}>
+      <h3 className={`text-xs font-semibold leading-normal tracking-wide transition-colors mb-4 break-words ${isDark ? 'text-slate-100 group-hover:text-indigo-400' : 'text-slate-800 group-hover:text-indigo-600'}`}>
         {task.title}
       </h3>
 
@@ -669,9 +829,8 @@ function TaskCard({ task, onDragStart, onClick }) {
       <div className={`flex items-center justify-between pt-3 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-100'}`}>
         <div className={`flex items-center gap-2 text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           {/* Calendar Date */}
-          { task.dueDate && (
-            <div className={`flex items-center gap-1 ${
-              isOverdue 
+          {task.dueDate && (
+            <div className={`flex items-center gap-1 ${isOverdue
                 ? "text-red-400"
                 : (isDark ? "text-neutral-400" : "text-neutral-500")
               }`}
@@ -690,7 +849,7 @@ function TaskCard({ task, onDragStart, onClick }) {
               </span>
             </div>
           )}
-          
+
           {/* Comments count */}
           {task.commentCount > 0 && (
             <div className="flex items-center gap-1">
@@ -731,6 +890,34 @@ function TaskCard({ task, onDragStart, onClick }) {
           {task.priority} priority
         </span>
       </div>
+
+      {/* Column Mover for mobile/touch fallback */}
+      {isDraggable && columns && columns.length > 1 && (
+        <div
+          className="lg:hidden mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="text-[10px] text-slate-450 font-medium">Move to:</span>
+          <select
+            value={typeof task.column === 'object' ? task.column?._id : task.column}
+            onChange={(e) => {
+              const targetColId = e.target.value;
+              if (targetColId) {
+                onMoveTask(task._id, targetColId);
+              }
+            }}
+            className={`text-[10px] font-semibold py-1 px-1.5 rounded-lg border outline-none cursor-pointer ${isDark
+                ? 'bg-slate-950 border-slate-800 text-slate-350'
+                : 'bg-slate-50 border-slate-200 text-slate-650'
+              }`}
+          >
+            {columns.map(c => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
+
