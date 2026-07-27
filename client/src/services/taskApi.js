@@ -50,4 +50,9 @@ const getArchivedTasksByProject = async (projectId) => {
   return response.data;
 }
 
-export { getTasksByProject, moveTask, updateTask, deleteTask, createTask, archiveTask, unArchiveTask, getArchivedTasksByProject };
+const searchTasks = async (query) => {
+  const response = await API.get(`/tasks/search`, { params: { q: query } });
+  return response.data;
+}
+
+export { getTasksByProject, moveTask, updateTask, deleteTask, createTask, archiveTask, unArchiveTask, getArchivedTasksByProject, searchTasks };

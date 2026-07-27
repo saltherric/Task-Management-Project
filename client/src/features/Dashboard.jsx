@@ -18,6 +18,11 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [failedAvatars, setFailedAvatars] = useState({});
+
+  const handleAvatarError = (userId) => {
+    setFailedAvatars(prev => ({ ...prev, [userId]: true }));
+  };
 
   const [userName, setUserName] = useState(() => {
     try {
@@ -370,20 +375,24 @@ export default function Dashboard() {
     const completedTasks = projectTasks.filter(t => t.status === 'done').length;
     const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    const assigneesSet = new Set();
+    const assigneesMap = new Map();
     projectTasks.forEach(t => {
       if (t.assignedTo && Array.isArray(t.assignedTo)) {
         t.assignedTo.forEach(u => {
           const name = u.username || u.name || '';
-          if (name) {
-            assigneesSet.add(getInitials(name));
+          if (name && !assigneesMap.has(u._id?.toString())) {
+            assigneesMap.set(u._id?.toString(), {
+              id: u._id,
+              initials: getInitials(name),
+              avatar: u.avatar || null
+            });
           }
         });
       }
     });
-    const assignees = Array.from(assigneesSet).slice(0, 3);
+    const assignees = Array.from(assigneesMap.values()).slice(0, 3);
     if (assignees.length === 0) {
-      assignees.push('T'); // Default placeholder initials for "Team"
+      assignees.push({ id: 'team', initials: 'T', avatar: null });
     }
 
     return {
@@ -799,19 +808,29 @@ export default function Dashboard() {
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
-                        {/* Overlapping User Avatars */}
+                         {/* Overlapping User Avatars */}
                         <div className="flex -space-x-1.5 overflow-hidden">
                           {p.assignees.map((assignee, aIdx) => (
-                            <div 
-                              key={aIdx} 
-                              className={`w-5.5 h-5.5 rounded-full border text-[8px] font-black flex items-center justify-center ${
-                                isDarkMode 
-                                  ? 'bg-slate-800 border-slate-800 text-slate-300' 
-                                  : 'bg-slate-100 border-slate-200 text-slate-600'
-                              }`}
-                            >
-                              {assignee}
-                            </div>
+                            <React.Fragment key={aIdx}>
+                              {assignee.avatar && !failedAvatars[assignee.id] ? (
+                                <img
+                                  src={assignee.avatar}
+                                  alt=""
+                                  onError={() => handleAvatarError(assignee.id)}
+                                  className="w-5.5 h-5.5 rounded-full object-cover border border-slate-200 dark:border-slate-800 shrink-0"
+                                />
+                              ) : (
+                                <div 
+                                  className={`w-5.5 h-5.5 rounded-full border text-[8px] font-black flex items-center justify-center shrink-0 ${
+                                    isDarkMode 
+                                      ? 'bg-slate-800 border-slate-800 text-slate-300' 
+                                      : 'bg-slate-100 border-slate-200 text-slate-600'
+                                  }`}
+                                >
+                                  {assignee.initials}
+                                </div>
+                              )}
+                            </React.Fragment>
                           ))}
                         </div>
 

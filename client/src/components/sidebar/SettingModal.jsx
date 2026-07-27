@@ -52,7 +52,12 @@ export default function SettingModal({
   const [updatingMemberId, setUpdatingMemberId] = useState('');
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeletingWorkspace, setIsDeletingWorkspace] = useState(false);
+  const [failedAvatars, setFailedAvatars] = useState({});
   const { showAlert } = useAlert();
+
+  const handleAvatarError = (userId) => {
+    setFailedAvatars(prev => ({ ...prev, [userId]: true }));
+  };
 
   const { socket, joinWorkspace, leaveWorkspace } = useSocket();
 
@@ -557,9 +562,18 @@ export default function SettingModal({
                       }`}
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-black text-white">
-                          {getInitials(username)}
-                        </div>
+                        {member.avatar && !failedAvatars[member._id] ? (
+                          <img 
+                            src={member.avatar} 
+                            alt="" 
+                            onError={() => handleAvatarError(member._id)}
+                            className="h-9 w-9 rounded-full object-cover shrink-0" 
+                          />
+                        ) : (
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-black text-white">
+                            {getInitials(username)}
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <div className="flex min-w-0 items-center gap-2">
                             <p className={`truncate text-sm font-bold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>

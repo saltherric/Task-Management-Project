@@ -1,6 +1,6 @@
-const Project = require ("../models/Project");
-const Column = require ("../models/Column");
-const Workspace = require ("../models/Workspace");
+const Project = require("../models/Project");
+const Column = require("../models/Column");
+const Workspace = require("../models/Workspace");
 const User = require("../models/User");
 const Task = require("../models/Task");
 const Attachment = require("../models/Attachment");
@@ -8,9 +8,35 @@ const Comment = require("../models/Comment");
 const { deleteFile } = require("./uploadFile");
 const { getProjectForUser, assertCanManageProject, sameId } = require("./projectAccessService");
 const { logActivity } = require("./activityService");
+const { generateSignedUrl } = require("./signedUrl");
+
+const signProjectAvatars = async (project) => {
+    if (!project) return project;
+    const projObj = typeof project.toObject === 'function' ? project.toObject() : project;
+
+    const signUserAvatar = async (user) => {
+        if (user && user.avatar && !user.avatar.startsWith('http') && !user.avatar.startsWith('data:')) {
+            try {
+                user.avatar = await generateSignedUrl(user.avatar);
+            } catch (err) {
+                console.error("Failed to sign project member avatar:", err);
+            }
+        }
+    };
+
+    if (projObj.createdBy) await signUserAvatar(projObj.createdBy);
+    if (projObj.members && projObj.members.length > 0) {
+        for (let member of projObj.members) {
+            if (member.user) {
+                await signUserAvatar(member.user);
+            }
+        }
+    }
+    return projObj;
+};
 
 
-const createProject = async ({ projectData, user}) => {
+const createProject = async ({ projectData, user }) => {
     const workspace = await Workspace.findOne({
         _id: projectData.workspace,
         "members.user": user._id,
@@ -42,7 +68,7 @@ const createProject = async ({ projectData, user}) => {
     } catch (activityError) {
         console.error("Failed to log project creation activity:", activityError);
     }
-    
+
     // Default columns for every new project.
     const defaultColumns = [
         {
@@ -74,7 +100,7 @@ const createProject = async ({ projectData, user}) => {
     return project;
 }
 
-const getProjects = async ({workspaceId, user}) => {
+const getProjects = async ({ workspaceId, user }) => {
     const workspace = await Workspace.findOne({
         _id: workspaceId,
         "members.user": user._id,
@@ -93,11 +119,11 @@ const getProjects = async ({workspaceId, user}) => {
             { "members.user": user._id },
         ],
     })
-        .populate("createdBy", "username email")
+        .populate("createdBy", "username email avatar")
         .populate("members.user", "username email avatar")
         .sort({ createdAt: -1 });
 
-    return projects;
+    return Promise.all(projects.map(signProjectAvatars));
 };
 
 const inviteProjectMember = async ({ projectId, userId, requesterId }) => {
@@ -119,10 +145,11 @@ const inviteProjectMember = async ({ projectId, userId, requesterId }) => {
         project.members.push({ user: userId, invitedBy: requesterId });
         await project.save();
     }
-    return await project.populate([
-        { path: "createdBy", select: "username email" },
+    const populated = await project.populate([
+        { path: "createdBy", select: "username email avatar" },
         { path: "members.user", select: "username email avatar" }
     ]);
+    return signProjectAvatars(populated);
 };
 
 const removeProjectMember = async ({ projectId, userId, requesterId }) => {
@@ -130,10 +157,11 @@ const removeProjectMember = async ({ projectId, userId, requesterId }) => {
     assertCanManageProject(project, requesterId);
     project.members = (project.members || []).filter((member) => !sameId(member.user, userId));
     await project.save();
-    return await project.populate([
-        { path: "createdBy", select: "username email" },
+    const populated = await project.populate([
+        { path: "createdBy", select: "username email avatar" },
         { path: "members.user", select: "username email avatar" }
     ]);
+    return signProjectAvatars(populated);
 };
 
 const updateProject = async ({ projectId, projectData, user }) => {
@@ -152,10 +180,11 @@ const updateProject = async ({ projectId, projectData, user }) => {
     }
 
     await project.save();
-    return await project.populate([
-        { path: "createdBy", select: "username email" },
+    const populated = await project.populate([
+        { path: "createdBy", select: "username email avatar" },
         { path: "members.user", select: "username email avatar" }
     ]);
+    return signProjectAvatars(populated);
 };
 
 const copyProject = async ({ projectId, user }) => {
@@ -188,7 +217,7 @@ const copyProject = async ({ projectId, user }) => {
     }
 
     const sourceColumns = await Column.find({ project: projectId }).sort({ position: 1 });
-    
+
     for (const sourceCol of sourceColumns) {
         const newCol = await Column.create({
             project: newProject._id,
@@ -198,7 +227,7 @@ const copyProject = async ({ projectId, user }) => {
         });
 
         const sourceTasks = await Task.find({ column: sourceCol._id, isArchived: false }).sort({ position: 1 });
-        
+
         for (const sourceTask of sourceTasks) {
             await Task.create({
                 project: newProject._id,
@@ -215,10 +244,11 @@ const copyProject = async ({ projectId, user }) => {
         }
     }
 
-    return await newProject.populate([
-        { path: "createdBy", select: "username email" },
+    const populated = await newProject.populate([
+        { path: "createdBy", select: "username email avatar" },
         { path: "members.user", select: "username email avatar" }
     ]);
+    return signProjectAvatars(populated);
 };
 
 const deleteProject = async ({ projectId, user }) => {

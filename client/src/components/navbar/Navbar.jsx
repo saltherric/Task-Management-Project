@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getStoredUserInfo, updateStoredUserInfo } from '../../helpers/auth';
+import { getProfile } from '../../services/authApi';
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { SearchBar } from '../navbar/SearchBar';
 import { NotificationDropdown } from '../navbar/NotificationDropdown';
@@ -35,21 +37,21 @@ function Navbar({ onMenuClick }) {
       return {
         name: storedUserInfo?.name || storedUserInfo?.username || storedUserInfo?.fullName || 'Sarah Connor',
         email: storedUserInfo?.email || 'sarah.connor@taskme.io',
+        avatar: storedUserInfo?.avatar || null,
       };
     } catch {
-      return { name: 'Sarah Connor', email: 'sarah.connor@taskme.io' };
+      return { name: 'Sarah Connor', email: 'sarah.connor@taskme.io', avatar: null };
     }
   });
 
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [currentUser?.avatar]);
+
   const [notifications, setNotifications] = useState([]);
 
-  const [tasks] = useState([
-    { id: 1, title: "Implement dark mode support", category: "UI/UX", status: "In Progress", priority: "High" },
-    { id: 2, title: "Refactor API authentication flow", category: "Backend", status: "To Do", priority: "Critical" },
-    { id: 3, title: "Write end-to-end testing suite", category: "QA", status: "Done", priority: "Medium" },
-    { id: 4, title: "Create product pitch slides", category: "Marketing", status: "In Progress", priority: "Low" },
-    { id: 5, title: "Update Tailwind CSS guidelines", category: "Documentation", status: "To Do", priority: "Medium" }
-  ]);
 
   useClickOutside(
     notifRef,
@@ -109,6 +111,26 @@ function Navbar({ onMenuClick }) {
       loadNotifications();
     }, 30000);
 
+    const fetchLatestProfile = async () => {
+      try {
+        const user = await getProfile();
+        if (user) {
+          updateStoredUserInfo({
+            name: user.username,
+            avatar: user.avatar,
+          });
+          setCurrentUser({
+            name: user.username || 'Sarah Connor',
+            email: user.email || 'sarah.connor@taskme.io',
+            avatar: user.avatar || null,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load user profile in Navbar", err);
+      }
+    };
+    fetchLatestProfile();
+
     return () => window.clearInterval(intervalId);
   }, []);
 
@@ -118,11 +140,28 @@ function Navbar({ onMenuClick }) {
     }
   }, [showNotifDropdown]);
 
-  // Filter tasks based on search query in the navbar
-  const filteredTasks = tasks.filter(task =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    const handleUserUpdate = () => {
+      try {
+        const rawUserInfo = localStorage.getItem('userInfo');
+        const storedUserInfo = rawUserInfo ? JSON.parse(rawUserInfo) : null;
+        if (storedUserInfo) {
+          setCurrentUser({
+            name: storedUserInfo.name || storedUserInfo.username || storedUserInfo.fullName || 'Sarah Connor',
+            email: storedUserInfo.email || 'sarah.connor@taskme.io',
+            avatar: storedUserInfo.avatar || null,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load user info on update event", err);
+      }
+    };
+
+    window.addEventListener('userInfoUpdated', handleUserUpdate);
+    return () => window.removeEventListener('userInfoUpdated', handleUserUpdate);
+  }, []);
+
+
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -304,9 +343,7 @@ function Navbar({ onMenuClick }) {
             setSearchQuery={setSearchQuery}
             isSearchFocused={isSearchFocused}
             setIsSearchFocused={setIsSearchFocused}
-            filteredTasks={filteredTasks}
             isDark={isDark}
-            getPriorityBadgeColor={getPriorityBadgeColor}
           />
 
           {/* Right Action Icons & Controls */}
@@ -375,9 +412,18 @@ function Navbar({ onMenuClick }) {
                   setShowNotifDropdown(false);
                 }}
               >
-                <div className={`h-9 w-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-semibold text-sm flex items-center justify-center ring-2 group-hover:ring-indigo-100 transition-all duration-200 shadow-sm ${isDark ? 'ring-slate-800 group-hover:ring-indigo-950/60' : 'ring-slate-100'}`}>
-                  {profileInitials}
-                </div>
+                {currentUser?.avatar && !avatarFailed ? (
+                  <img 
+                    src={currentUser.avatar}
+                    alt="User Avatar"
+                    onError={() => setAvatarFailed(true)}
+                    className={`h-9 w-9 rounded-full object-cover ring-2 group-hover:ring-indigo-100 transition-all duration-200 shadow-sm ${isDark ? 'ring-slate-800 group-hover:ring-indigo-950/60' : 'ring-slate-100'}`}
+                  />
+                ) : (
+                  <div className={`h-9 w-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-semibold text-sm flex items-center justify-center ring-2 group-hover:ring-indigo-100 transition-all duration-200 shadow-sm ${isDark ? 'ring-slate-800 group-hover:ring-indigo-950/60' : 'ring-slate-100'}`}>
+                    {profileInitials}
+                  </div>
+                )}
               </button>
 
               {/* Profile Dropdown Panel */}
@@ -389,6 +435,7 @@ function Navbar({ onMenuClick }) {
                   handleConnectTelegram={handleConnectTelegram}
                   isConnectingTelegram={isConnectingTelegram}
                   handleLogout={handleLogout}
+                  onClose={() => setShowProfileDropdown(false)}
                 />
               )}
             </div>

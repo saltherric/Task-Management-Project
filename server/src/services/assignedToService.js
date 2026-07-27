@@ -5,6 +5,36 @@ const { createNotification } = require("./notificationService");
 const User = require("../models/User");
 const { emitToWorkspace } = require("../socket/socketGateway");
 const { getProjectForUser } = require("./projectAccessService");
+const { generateSignedUrl } = require("./signedUrl");
+
+const signUserAvatar = async (user) => {
+    if (!user) return user;
+    const userObj = typeof user.toObject === 'function' ? user.toObject() : user;
+    if (userObj.avatar && !userObj.avatar.startsWith('http') && !userObj.avatar.startsWith('data:')) {
+        try {
+            userObj.avatar = await generateSignedUrl(userObj.avatar);
+        } catch (err) {
+            console.error("Failed to sign user avatar:", err);
+        }
+    }
+    return userObj;
+};
+
+const signTaskAvatars = async (task) => {
+    if (!task) return task;
+    const taskObj = typeof task.toObject === 'function' ? task.toObject() : task;
+
+    if (taskObj.createdBy) taskObj.createdBy = await signUserAvatar(taskObj.createdBy);
+    if (taskObj.completedBy) taskObj.completedBy = await signUserAvatar(taskObj.completedBy);
+    if (taskObj.updatedBy) taskObj.updatedBy = await signUserAvatar(taskObj.updatedBy);
+    if (taskObj.lastMovedBy) taskObj.lastMovedBy = await signUserAvatar(taskObj.lastMovedBy);
+
+    if (taskObj.assignedTo && taskObj.assignedTo.length > 0) {
+        taskObj.assignedTo = await Promise.all(taskObj.assignedTo.map(signUserAvatar));
+    }
+
+    return taskObj;
+};
 
 const getAvailableAssignees = async (taskId, currentUserId) => {
     const task = await Task.findById(taskId);
@@ -16,19 +46,23 @@ const getAvailableAssignees = async (taskId, currentUserId) => {
 
     const workspace = await Workspace.findById(project.workspace)
         .populate(
-            "members.user", "username email"
+            "members.user", "username email avatar"
         );
     
+    let assignees = [];
     if (project.visibility === "private") {
         const allowedIds = new Set([
             project.createdBy.toString(),
             ...(project.members || []).map((member) => member.user.toString()),
         ]);
-        return workspace.members
+        assignees = workspace.members
             .map((member) => member.user)
             .filter((member) => member && allowedIds.has(member._id.toString()));
+    } else {
+        assignees = workspace.members.map((member) => member.user).filter(Boolean);
     }
-    return workspace.members.map((member) => member.user);
+
+    return Promise.all(assignees.map(signUserAvatar));
 };
 
 const assignUser = async ({ taskId, userId, currentUserId }) => {
@@ -109,18 +143,20 @@ const assignUser = async ({ taskId, userId, currentUserId }) => {
         actionUrl: `/tasks/${updatedTask._id}`,
     });
 
+    const signedTask = await signTaskAvatars(updatedTask);
+
     emitToWorkspace(
         workspace._id.toString(),
         "task:updated",
         {
-            task: updatedTask,
+            task: signedTask,
             projectId: project._id.toString(),
             workspaceId: workspace._id.toString(),
             actorId: currentUserId.toString(),
         }
     );
 
-    return updatedTask;
+    return signedTask;
 };
 
 const removeAssignee = async ({ taskId, userId, currentUserId }) => {
@@ -177,18 +213,20 @@ const removeAssignee = async ({ taskId, userId, currentUserId }) => {
         actionUrl: `/tasks/${taskId}`,
     });
 
+    const signedTask = await signTaskAvatars(updatedTask);
+
     emitToWorkspace(
         workspace._id.toString(),
         "task:updated",
         {
-            task: updatedTask,
+            task: signedTask,
             projectId: project._id.toString(),
             workspaceId: workspace._id.toString(),
             actorId: currentUserId.toString(),
         }
     );
 
-  return updatedTask;
+  return signedTask;
 };
 
 module.exports = {

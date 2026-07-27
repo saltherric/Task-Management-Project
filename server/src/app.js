@@ -15,6 +15,7 @@ const commentRoutes = require("./routes/commentRoutes");
 const inviteLinkRoutes = require("./routes/inviteLinkRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const activityRoutes = require("./routes/activityRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 const app = express();
 
 app.use(cors());
@@ -30,6 +31,7 @@ app.use("/api/comments", commentRoutes);
 app.use("/api/workspaces", inviteLinkRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/activities", activityRoutes);
+app.use("/api/uploads", uploadRoutes);
 
 // error middlware
 app.use(errorMiddleware);

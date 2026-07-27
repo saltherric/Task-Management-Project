@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import API from "../services/api";
 import { useAlert } from "../contexts/AlertContext";
@@ -7,8 +7,12 @@ function VerifyEmailPage() {
     const [status, setStatus] = useState("loading");
     const [message, setMessage] = useState("");
     const { showAlert } = useAlert();
+    const hasCalled = useRef(false);
 
     useEffect(() => {
+        if (hasCalled.current) return;
+        hasCalled.current = true;
+
         const verifyEmail = async () => {
             const token = new URLSearchParams(window.location.search).get("token");
 

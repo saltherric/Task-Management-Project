@@ -322,8 +322,6 @@ export default function Analytics() {
         label: item.label,
         color: item.color,
         strokeLength,
-        // negative offset "rotates" this segment's start point
-        // to right after the previous segment ends
         strokeOffset: -cumulativeOffset,
         percentage: item.percentage
       };

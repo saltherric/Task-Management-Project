@@ -1,5 +1,18 @@
 const Workspace = require("../models/Workspace");
 const User = require("../models/User");
+const { generateSignedUrl } = require("./signedUrl");
+
+const signUserAvatar = async (user) => {
+    if (!user) return user;
+    if (user.avatar && !user.avatar.startsWith('http') && !user.avatar.startsWith('data:')) {
+        try {
+            user.avatar = await generateSignedUrl(user.avatar);
+        } catch (err) {
+            console.error("Failed to sign user avatar:", err);
+        }
+    }
+    return user;
+};
 
 const getWorkspaceMembers = async ({workspaceId}) => {
     const workspace = await Workspace.findById(workspaceId)
@@ -10,13 +23,15 @@ const getWorkspaceMembers = async ({workspaceId}) => {
         throw new Error("Workspace not found");
     }
 
-    return workspace.members
+    const members = workspace.members
         .filter(member => member.user)
         .map(member => ({
             ...member.user,
             role: member.role,
             joinedAt: member.joinedAt,
         }));
+
+    return Promise.all(members.map(signUserAvatar));
 };
 
 const updateWorkspace = async ({ workspaceId, workspaceData, user }) => {
@@ -80,7 +95,7 @@ const getAvailableMembers = async ({workspaceId}) => {
     })
         .select("_id username email avatar")
         .lean();
-    return users;
+    return Promise.all(users.map(signUserAvatar));
 };
 
 const invitesMember = async ({ workspaceId, userId, requesterId, role = "member" }) => {

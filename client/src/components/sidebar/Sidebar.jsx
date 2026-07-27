@@ -150,7 +150,7 @@ function Sidebar({ isOpen, onClose }) {
         }
         onClose?.();
       },
-      active: !projectId && !location.pathname.includes('/analytics') && !location.pathname.includes('/activity')
+      active: !projectId && !location.pathname.includes('/analytics') && !location.pathname.includes('/activity') && !location.pathname.includes('/settings')
     },
     { 
       label: 'Board', 
@@ -191,6 +191,18 @@ function Sidebar({ isOpen, onClose }) {
         onClose?.();
       },
       active: location.pathname.includes('/activity')
+    },
+    // Settings tab is now enabled
+    { 
+      label: 'Settings', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+      onClick: () => {
+        if (workspaceId) {
+          navigate(`/workspaces/${workspaceId}/settings`);
+        }
+        onClose?.();
+      },
+      active: location.pathname.includes('/settings')
     },
   ];
 
@@ -342,9 +354,11 @@ function Sidebar({ isOpen, onClose }) {
             >
               <div className="flex items-center gap-2.5">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-semibold shrink-0 ${
-                  isDark ? 'bg-indigo-400 text-indigo-200' : 'bg-indigo-100 text-indigo-700'
+                  isDark ? 'bg-indigo-300 text-indigo-200' : 'bg-indigo-100 text-indigo-700'
                 }`}>
-                  💼
+                  <svg className="w-3.5 h-3.5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" />
+                  </svg>
                 </div>
                 <span className="text-xs font-medium truncate">{activeWorkspace?.name}</span>
               </div>
@@ -377,8 +391,10 @@ function Sidebar({ isOpen, onClose }) {
                         : isDark ? 'text-slate-300 hover:bg-white/[0.05]' : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="w-5 h-5 rounded bg-gradient-to-br from-fuchsia-200 to-violet-400 flex items-center justify-center text-[10px] shrink-0">
-                      💼
+                    <div className="w-5 h-5 rounded bg-gradient-to-br from-fuchsia-200 to-violet-200 flex items-center justify-center text-[10px] shrink-0">
+                      <svg className="w-3.5 h-3.5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" />
+                      </svg>
                     </div>
                     <span className="text-xs truncate">{ws.name}</span>
                     {ws._id === workspaceId && (

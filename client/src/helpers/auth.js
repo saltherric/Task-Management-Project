@@ -28,9 +28,25 @@ const getAuthState = () => {
   };
 };
 
+// This helper function updates the user's name in local storage without breaking other login details
+const updateStoredUserInfo = (updatedUser) => {
+  try {
+    const rawUserInfo = localStorage.getItem('userInfo');
+    if (rawUserInfo) {
+      const current = JSON.parse(rawUserInfo);
+      // Merge the existing details with updated ones (like the name/username)
+      const next = { ...current, ...updatedUser };
+      localStorage.setItem('userInfo', JSON.stringify(next));
+    }
+  } catch (e) {
+    console.error("Failed to update stored user info in localStorage:", e);
+  }
+};
+
 export {
   getStoredUserInfo,
   getAuthToken,
   getAuthHeaders,
-  getAuthState
+  getAuthState,
+  updateStoredUserInfo
 }

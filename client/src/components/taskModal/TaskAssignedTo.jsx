@@ -6,7 +6,12 @@ import { useAlert } from '../../contexts/AlertContext';
 export default function TaskAssignedTo({ task, onTaskUpdate, isAdmin }) {
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [failedAvatars, setFailedAvatars] = useState({});
   const { showAlert } = useAlert();
+
+  const handleAvatarError = (userId) => {
+    setFailedAvatars(prev => ({ ...prev, [userId]: true }));
+  };
 
   const getUserKey = (user, index) =>
     user?._id || user?.id || user?.username || `user-${index}`;
@@ -98,7 +103,18 @@ export default function TaskAssignedTo({ task, onTaskUpdate, isAdmin }) {
                             className={`w-full flex items-center justify-between px-2 py-1.5 rounded-xl text-xs hover:bg-slate-100 dark:hover:bg-[#1E212A] text-left transition-colors ${isAssigned ? 'bg-indigo-500/10 text-indigo-650 dark:text-indigo-300' : 'text-slate-700 dark:text-neutral-300'}`}
                           >
                             <div className="flex items-center gap-2">
-                            <img src={user.avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+                            {user.avatar && !failedAvatars[user._id] ? (
+                              <img 
+                                src={user.avatar} 
+                                alt="" 
+                                onError={() => handleAvatarError(user._id)}
+                                className="w-5 h-5 rounded-full object-cover" 
+                              />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-indigo-500 text-white font-bold text-[9px] flex items-center justify-center">
+                                {user.username?.charAt(0).toUpperCase() || 'U'}
+                              </div>
+                            )}
                             <span>{user.username}</span>
                             </div>
                             {isAssigned && <CheckCircle className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />}
@@ -118,7 +134,18 @@ export default function TaskAssignedTo({ task, onTaskUpdate, isAdmin }) {
                 className="flex items-center justify-between bg-slate-50/50 dark:bg-[#111215]/50 border border-slate-200 dark:border-[#1C1F26]/80 p-2 rounded-xl group hover:border-indigo-500/25 hover:bg-slate-100/30 dark:hover:bg-[#1C1E24]/30 transition-all duration-200"
             >
                 <div className="flex items-center gap-2">
-                <img src={user.avatar} alt="avatar" className="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-[#22242B]" />
+                {user.avatar && !failedAvatars[user._id] ? (
+                  <img 
+                    src={user.avatar} 
+                    alt="avatar" 
+                    onError={() => handleAvatarError(user._id)}
+                    className="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-[#22242B]" 
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-indigo-500 text-white font-bold text-[10px] flex items-center justify-center border border-slate-200 dark:border-[#22242B]">
+                    {user.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
                 <span className="text-xs font-semibold text-slate-800 dark:text-neutral-200">{user.username}</span>
                 </div>
                 

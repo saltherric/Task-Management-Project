@@ -44,7 +44,7 @@ const createComment = async({ taskId, user, commentData}) => {
     }
 
     return await Comment.findById(comment._id)
-        .populate("user", "username email");
+        .populate("user", "username email avatar");
 
     return comment;
 }
@@ -59,7 +59,7 @@ const getComments = async (taskId) => {
    const comments = await Comment.find({
       task: taskId,
    })
-      .populate("user", "username email")
+      .populate("user", "username email avatar")
       .sort({ createdAt: 1 });
 
    return comments;

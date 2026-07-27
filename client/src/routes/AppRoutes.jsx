@@ -8,6 +8,7 @@ import Dashboard from "../features/Dashboard";
 import InvitePage from "../features/InvitePage";
 import Analytics from "../features/Analytics";
 import Activity from "../features/Activity";
+import SettingsPage from "../features/SettingsPage"; 
 import OAuthSuccessPage from "../features/OAuthSuccessPage";
 
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -62,6 +63,11 @@ function AppRoutes() {
           <Route
             path="/workspaces/:workspaceId/activity"
             element={<Activity />}
+          />
+
+          <Route
+            path="/workspaces/:workspaceId/settings"
+            element={<SettingsPage />}
           />
         </Route>
 

@@ -1,5 +1,26 @@
 const Activity = require("../models/Activity");
 const { emitToWorkspace } = require("../socket/socketGateway");
+const { generateSignedUrl } = require("./signedUrl");
+
+const signActivityAvatars = async (activity) => {
+    if (!activity) return activity;
+    const actObj = typeof activity.toObject === 'function' ? activity.toObject() : activity;
+
+    const signUserAvatar = async (user) => {
+        if (user && user.avatar && !user.avatar.startsWith('http') && !user.avatar.startsWith('data:')) {
+            try {
+                user.avatar = await generateSignedUrl(user.avatar);
+            } catch (err) {
+                console.error("Failed to sign activity user avatar:", err);
+            }
+        }
+    };
+
+    if (actObj.actor) await signUserAvatar(actObj.actor);
+    if (actObj.recipient) await signUserAvatar(actObj.recipient);
+    
+    return actObj;
+};
 
 const logActivity = async ({
   actor,
@@ -44,7 +65,8 @@ const logActivity = async ({
         });
 
       if (workspace) {
-        emitToWorkspace(workspace.toString(), "activity:created", { activity: populatedActivity });
+        const signedActivity = await signActivityAvatars(populatedActivity);
+        emitToWorkspace(workspace.toString(), "activity:created", { activity: signedActivity });
       }
     } catch (emitError) {
       console.error("Failed to emit activity socket event:", emitError);
@@ -81,7 +103,7 @@ const getWorkspaceActivities = async ({
     .skip(skip)
     .limit(limit);
 
-  return activities;
+  return Promise.all(activities.map(signActivityAvatars));
 };
 
 module.exports = {

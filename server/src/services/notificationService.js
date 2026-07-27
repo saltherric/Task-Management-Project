@@ -16,7 +16,24 @@ const createNotification = async ({
     metadata = {},
 }) => {
 
-    // 1. Save notification to MongoDB
+    // 1. Get recipient information and check notification settings
+    const recipientUser = await User.findById(recipient)
+        .select("notificationSettings telegram");
+
+    if (recipientUser && recipientUser.notificationSettings) {
+        const settings = recipientUser.notificationSettings;
+        if ((type === "TASK_ASSIGNED" || type === "TASK_UNASSIGNED") && settings.taskAssigned === false) {
+            return null;
+        }
+        if ((type === "COMMENT_ADDED" || type === "MENTION") && settings.commentsMentions === false) {
+            return null;
+        }
+        if ((type === "TASK_OVERDUE" || type === "TASK_DUE_SOON") && settings.dueReminders === false) {
+            return null;
+        }
+    }
+
+    // 2. Save notification to MongoDB
     const notification = await Notification.create({
         recipient,
         sender,
@@ -30,10 +47,6 @@ const createNotification = async ({
         actionUrl,
         metadata,
     });
-
-    // 2. Get recipient information
-    const recipientUser = await User.findById(recipient)
-        .select("telegram");
 
     // 3. Send Telegram if connected
     if (

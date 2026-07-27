@@ -24,7 +24,6 @@
     "@tiptap/extension-underline": "^3.26.0",
     "@tiptap/react": "^3.26.0",
     "@tiptap/starter-kit": "^3.26.0",
-    "antd": "^6.4.3",
     "axios": "^1.16.1",
     "lucide-react": "^1.17.0",
     "react": "^19.2.5",

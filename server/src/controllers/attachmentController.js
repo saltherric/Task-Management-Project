@@ -28,7 +28,7 @@ const createAttachment = async (req, res, next) => {
       });
     }
 
-    const { fileKey } = await uploadFile(req.file);
+    const { fileKey } = await uploadFile(req.file, "attachments");
 
     const attachment = await createAttachmentService({
       taskId: req.params.taskId,

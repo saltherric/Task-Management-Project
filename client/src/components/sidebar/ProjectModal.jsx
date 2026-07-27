@@ -32,7 +32,7 @@ export default function ProjectModal({ isOpen, onClose, onCreate}) {
                     isDark ? 'border-slate-800/60' : 'border-slate-100'
                 }`}>
                     <div className="flex items-center gap-2">
-                        📂
+                        <i className='fa-solid fa-folder text-indigo-500 dark:text-indigo-400 text-s'></i>
                         <h2 className={`font-bold text-sm tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
                             Create Project
                         </h2>

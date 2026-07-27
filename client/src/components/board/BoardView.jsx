@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getProjects, updateProject, copyProject, deleteProject } from '../../services/projectApi';
 import { getTasksByProject, moveTask, createTask } from '../../services/taskApi';
 import { getStoredUserInfo } from '../../helpers/auth';
@@ -21,11 +21,13 @@ function Board() {
   const isDark = theme === 'dark';
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { projectId, workspaceId } = useParams();
   const [tasks, setTasks] = useState([]);
   const [columns, setColumns] = useState([]);
   const [projects, setProjects] = useState([]);
   const [members, setMembers] = useState([]);
+  const [activeUsers, setActiveUsers] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeComposerColumnId, setActiveComposerColumnId] = useState(null);
@@ -69,6 +71,18 @@ function Board() {
       fetchMembers(workspaceId);
     }
   }, [projectId, workspaceId]);
+
+  useEffect(() => {
+    if (location.state?.openTaskId && tasks.length > 0) {
+      const taskToOpen = tasks.find(t => String(t._id || t.id) === String(location.state.openTaskId));
+      if (taskToOpen) {
+        setSelectedTask(taskToOpen);
+        setIsModalOpen(true);
+        // Clear state to prevent reopening on reload or back/forward navigation
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [location.state, tasks, navigate, location.pathname]);
 
   const fetchProjects = async (workspaceId) => {
     try {
@@ -413,6 +427,24 @@ function Board() {
       }
     };
 
+    // Define a listener function to update the active users list in this project
+    const handleActiveUsers = (payload) => {
+      if (isMounted && String(payload.projectId) === String(projectId)) {
+        setActiveUsers(payload.users || []);
+      }
+    };
+
+    // Tell the server we have joined/viewed this project room
+    let isProjectJoined = false;
+    socket.emit("project:join", { projectId }, (response) => {
+      if (isMounted && response?.success) {
+        isProjectJoined = true;
+      }
+    });
+
+    // Start listening for active users list updates from the server
+    socket.on("project:active_users", handleActiveUsers);
+
     registerWorkspaceRoom();
     socket.on("task:created", handleTaskCreated);
     socket.on("task:updated", handleTaskUpdatedEvent);
@@ -426,6 +458,15 @@ function Board() {
     return () => {
       isMounted = false;
       leaveWorkspace(workspaceId);
+
+      // Tell the server we have left this project room
+      if (isProjectJoined) {
+        socket.emit("project:leave", { projectId });
+      }
+
+      // Stop listening to active users list updates
+      socket.off("project:active_users", handleActiveUsers);
+
       socket.off("task:created", handleTaskCreated);
       socket.off("task:updated", handleTaskUpdatedEvent);
       socket.off("task:moved", handleTaskMoved);
@@ -484,39 +525,46 @@ function Board() {
 
           {/* Avatar and Info Row */}
           <div className="flex items-center gap-3">
+            {/* If there are any users currently active on this project, show them with a live indicator */}
             <div className="flex -space-x-1 overflow-hidden">
-              {projectMembers.slice(0, 4).map((member, idx) => {
-                const username = member.username || member.email || 'User';
+              {/* Loop through the active users currently on this project board */}
+              {activeUsers.slice(0, 4).map((user, idx) => {
+                const username = user.username || user.email || 'User';
                 const initials = username
                   .split(" ")
                   .filter(Boolean)
                   .map(word => word.charAt(0).toUpperCase())
                   .slice(0, 2)
                   .join("") || "U";
-                return member.avatar ? (
-                  <img
-                    key={member._id || idx}
-                    src={member.avatar}
-                    alt={username}
-                    className={`h-8 w-8 rounded-full object-cover ring-2 cursor-default ${isDark ? 'ring-[#090D16]' : 'ring-slate-50'}`}
-                    title={username}
-                  />
-                ) : (
-                  <div
-                    key={member._id || idx}
-                    className={`flex h-8 w-8 rounded-full ring-2 text-xs font-bold flex items-center justify-center cursor-default ${isDark ? 'ring-[#090D16] bg-slate-800 text-slate-300' : 'ring-slate-50 bg-slate-200 text-slate-700'}`}
-                    title={username}
-                  >
-                    {initials}
+                return (
+                  <div key={user._id || idx} className="relative">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={username}
+                        className={`h-8 w-8 rounded-full object-cover ring-2 cursor-default ${isDark ? 'ring-[#090D16]' : 'ring-slate-50'}`}
+                        title={`${username} (Active Now)`}
+                      />
+                    ) : (
+                      <div
+                        className={`flex h-8 w-8 rounded-full ring-2 text-xs font-bold flex items-center justify-center cursor-default ${isDark ? 'ring-[#090D16] bg-slate-800 text-slate-300' : 'ring-slate-50 bg-slate-200 text-slate-700'}`}
+                        title={`${username} (Active Now)`}
+                      >
+                        {initials}
+                      </div>
+                    )}
+                    {/* Pulsing green online dot in bottom-right corner */}
+                    <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#090D16] animate-pulse" />
                   </div>
                 );
               })}
-              {projectMembers.length > 4 && (
+              {/* If there are more than 4 active users, show a counter */}
+              {activeUsers.length > 4 && (
                 <div
                   className={`flex h-8 w-8 rounded-full ring-2 text-xs font-bold flex items-center justify-center cursor-default ${isDark ? 'ring-[#090D16] bg-slate-800 text-slate-300' : 'ring-slate-50 bg-slate-200 text-slate-700'}`}
-                  title={`${projectMembers.length - 4} more members`}
+                  title={`${activeUsers.length - 4} more active users`}
                 >
-                  +{projectMembers.length - 4}
+                  +{activeUsers.length - 4}
                 </div>
               )}
             </div>
@@ -871,16 +919,30 @@ function TaskCard({ task, onDragStart, onClick, isDraggable, columns, onMoveTask
           )}
         </div>
 
-        {/* Assigned Users Initial Circles */}
-        <div className="flex -space-x-1 ">
-          {task.assignedTo?.map((user, index) => (
-            <div
-              key={user._id || user.id || user.username || `assignee-${index}`}
-              className={`h-6 w-6 rounded-full text-[8px] flex items-center justify-center ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}
-            >
-              {getInitials(user.username)}
-            </div>
-          ))}
+        <div className="flex -space-x-1">
+          {task.assignedTo?.map((user, index) => {
+            const username = user.username || 'User';
+            if (user.avatar) {
+              return (
+                <img
+                  key={user._id || user.id || user.username || `assignee-${index}`}
+                  src={user.avatar}
+                  alt={username}
+                  className="h-6 w-6 rounded-full object-cover ring-1 ring-white dark:ring-[#090D16]"
+                  title={username}
+                />
+              );
+            }
+            return (
+              <div
+                key={user._id || user.id || user.username || `assignee-${index}`}
+                className={`h-6 w-6 rounded-full text-[8px] flex items-center justify-center ring-1 ring-white dark:ring-[#090D16] ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}
+                title={username}
+              >
+                {getInitials(username)}
+              </div>
+            );
+          })}
         </div>
       </div>
 

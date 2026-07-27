@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Spin } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import { Loader2 } from 'lucide-react';
 import API from '../services/api';
 import { useAlert } from '../contexts/AlertContext';
 
@@ -53,11 +52,9 @@ function OAuthSuccessPage() {
     fetchUserData();
   }, [searchParams, navigate, showAlert]);
 
-  const antIcon = <LoadingOutlined style={{ fontSize: 48, color: 'var(--color-primary)' }} spin />;
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-(--color-bg)">
-      <Spin indicator={antIcon} />
+      <Loader2 className="w-12 h-12 text-(--color-primary) animate-spin" />
       <p className="text-lg font-medium text-(--color-muted) animate-pulse">
         Completing Google sign-in...
       </p>

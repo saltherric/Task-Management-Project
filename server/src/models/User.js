@@ -66,6 +66,25 @@ const userSchema = new mongoose.Schema(
             default: null,
         },
 
+        notificationSettings: {
+            taskAssigned: {
+                type: Boolean,
+                default: true,
+            },
+            commentsMentions: {
+                type: Boolean,
+                default: true,
+            },
+            dueReminders: {
+                type: Boolean,
+                default: true,
+            },
+            smartPriority: {
+                type: Boolean,
+                default: false,
+            },
+        },
+
         telegram: {
             chatId: {
                 type: String,
@@ -84,6 +103,21 @@ const userSchema = new mongoose.Schema(
         isActive: {
             type: Boolean,
             default: true,
+        },
+
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
+
+        verificationToken: {
+            type: String,
+            default: null,
+        },
+
+        verificationTokenExpires: {
+            type: Date,
+            default: null,
         },
 
         refreshTokens: {

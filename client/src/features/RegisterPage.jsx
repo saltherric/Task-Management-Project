@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from "react-router-dom";
-import { Button, Form, Input } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import API from '../services/api';
 import { useAlert } from '../contexts/AlertContext';
 
@@ -9,14 +8,51 @@ function Register() {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
 
-  const handleSubmit = async (values) => {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const validate = () => {
+    const tempErrors = {};
+    if (!username.trim()) tempErrors.username = 'Please input your Full name!';
+    
+    if (!email.trim()) {
+      tempErrors.email = 'Please input your Email!';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      tempErrors.email = 'Please input a valid Email!';
+    }
+    
+    if (!password) {
+      tempErrors.password = 'Please input your Password!';
+    } else if (password.length < 6) {
+      tempErrors.password = 'Password must be at least 6 characters!';
+    }
+    
+    if (!confirmPassword) {
+      tempErrors.confirmPassword = 'Please confirm your password!';
+    } else if (password !== confirmPassword) {
+      tempErrors.confirmPassword = 'The two passwords that you entered do not match!';
+    }
+
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+
     try {
-      const { username, email, password } = values;
       const user = {
         username,
         email,
         password
-      }
+      };
       const response = await API.post('/auth/register', user);
       console.log(response.data);
 
@@ -31,7 +67,7 @@ function Register() {
       const backendMessage = error.response?.data?.message;
       showAlert(backendMessage || 'Registration failed.', 'danger');
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3">
@@ -39,50 +75,107 @@ function Register() {
         <h1 className="mb-9 pb-4 text-4xl font-semibold">Register</h1>
         <p className="register-subtitle">Create your account to start managing tasks.</p>
 
-        <Form
-          name="register_form"
-          onFinish={handleSubmit}
-          requiredMark={false} // Hides the red asterisks
-          layout="vertical"
-          className="space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Username Input */}
-          <Form.Item name="username" rules={[{ required: true, message: 'Please input your Full name!' }]}>
-            <Input prefix={<UserOutlined className="input-icon" />} placeholder="Full name" 
-              className="antd-custom-input"
-            />
-          </Form.Item>
+          <div className="flex flex-col text-left">
+            <div className="relative flex items-center bg-(--color-card) border border-indigo-600/15 rounded-xl px-4 py-2.5 transition-all duration-300 focus-within:border-(--color-primary) focus-within:ring-1 focus-within:ring-(--color-primary)">
+              <User className="w-5 h-5 text-(--color-primary) mr-3 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Full name"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  if (errors.username) setErrors(prev => ({ ...prev, username: '' }));
+                }}
+                className="w-full bg-transparent text-(--color-text) text-base placeholder-(--color-muted) outline-none border-none p-0"
+              />
+            </div>
+            {errors.username && <span className="text-red-500 text-xs mt-1.5 ml-3">{errors.username}</span>}
+          </div>
 
           {/* Email Input */}
-          <Form.Item name="email" rules={[{ required: true, message: 'Please input your Email!' }]}>
-            <Input prefix={<MailOutlined className="input-icon" />} placeholder="Email" 
-              className="antd-custom-input"
-            />
-          </Form.Item>
+          <div className="flex flex-col text-left">
+            <div className="relative flex items-center bg-(--color-card) border border-indigo-600/15 rounded-xl px-4 py-2.5 transition-all duration-300 focus-within:border-(--color-primary) focus-within:ring-1 focus-within:ring-(--color-primary)">
+              <Mail className="w-5 h-5 text-(--color-primary) mr-3 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                }}
+                className="w-full bg-transparent text-(--color-text) text-base placeholder-(--color-muted) outline-none border-none p-0"
+              />
+            </div>
+            {errors.email && <span className="text-red-500 text-xs mt-1.5 ml-3">{errors.email}</span>}
+          </div>
 
           {/* Password Input */}
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: 'Please input your Password!' }]}
-          >
-            <Input.Password 
-              placeholder="Password" 
-              prefix={<LockOutlined className="input-icon" />} 
-              className="antd-custom-input"
-            />
-          </Form.Item>
+          <div className="flex flex-col text-left">
+            <div className="relative flex items-center bg-(--color-card) border border-indigo-600/15 rounded-xl px-4 py-2.5 transition-all duration-300 focus-within:border-(--color-primary) focus-within:ring-1 focus-within:ring-(--color-primary)">
+              <Lock className="w-5 h-5 text-(--color-primary) mr-3 flex-shrink-0" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                }}
+                className="w-full bg-transparent text-(--color-text) text-base placeholder-(--color-muted) outline-none border-none p-0 pr-8"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 text-(--color-muted) hover:text-(--color-primary) transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {errors.password && <span className="text-red-500 text-xs mt-1.5 ml-3">{errors.password}</span>}
+          </div>
+
+          {/* Confirm Password Input */}
+          <div className="flex flex-col text-left">
+            <div className="relative flex items-center bg-(--color-card) border border-indigo-600/15 rounded-xl px-4 py-2.5 transition-all duration-300 focus-within:border-(--color-primary) focus-within:ring-1 focus-within:ring-(--color-primary)">
+              <Lock className="w-5 h-5 text-(--color-primary) mr-3 flex-shrink-0" />
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
+                }}
+                className="w-full bg-transparent text-(--color-text) text-base placeholder-(--color-muted) outline-none border-none p-0 pr-8"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 text-(--color-muted) hover:text-(--color-primary) transition-colors cursor-pointer"
+              >
+                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {errors.confirmPassword && <span className="text-red-500 text-xs mt-1.5 ml-3">{errors.confirmPassword}</span>}
+          </div>
 
           {/* Submit Button */}
-          <Form.Item>
-            <Button type="primary" htmlType='submit' className="login-button" >
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="w-full py-3 bg-(--color-primary) text-(--color-card) font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-[0_4px_12px_rgba(37,99,235,0.20)] hover:bg-[color-mix(in_srgb,var(--color-primary)_88%,black)]"
+            >
               Register
-            </Button>
-          </Form.Item>
-        </Form>
+            </button>
+          </div>
+        </form>
 
         {/* Footer */}
         <p className="mt-6 text-sm text-(--color-muted)">
-          Already have an account? <Link to="/login">Login</Link>
+          Already have an account? <Link to="/login" className="text-(--color-primary) font-semibold hover:underline">Login</Link>
         </p>
       </div>
     </div>

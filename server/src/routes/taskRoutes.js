@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createTask, getTasks, getTaskById, updateTask, deleteTask, moveTask } = require("../controllers/taskController");
+const { createTask, getTasks, getTaskById, updateTask, deleteTask, moveTask, searchTasks } = require("../controllers/taskController");
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { taskMiddleware } = require("../middleware/taskMiddleware");
 const { getAvailableAssignees, assignUser, removeAssignee } = require("../controllers/assignedToController");
@@ -8,6 +8,7 @@ const { archiveTask, unarchiveTask, getArchivedTasks } = require("../controllers
 const { connectTelegramController } = require("../controllers/TelegramController");
 
 router.get("/projects/:projectId", authMiddleware, getTasks);
+router.get("/search", authMiddleware, searchTasks);
 router.get("/:id", authMiddleware, getTaskById);
 router.post("/", authMiddleware, taskMiddleware, createTask);
 router.patch("/:taskId", authMiddleware,updateTask);

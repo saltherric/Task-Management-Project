@@ -8,6 +8,35 @@ const Column = require("../models/Column");
 const { emitToWorkspace } = require("../socket/socketGateway");
 const { getProjectForUser } = require("./projectAccessService");
 const { logActivity } = require("./activityService");
+const { generateSignedUrl } = require("./signedUrl");
+
+const signTaskAvatars = async (task) => {
+    if (!task) return task;
+    const taskObj = typeof task.toObject === 'function' ? task.toObject() : task;
+
+    const signUserAvatar = async (user) => {
+        if (user && user.avatar && !user.avatar.startsWith('http') && !user.avatar.startsWith('data:')) {
+            try {
+                user.avatar = await generateSignedUrl(user.avatar);
+            } catch (err) {
+                console.error("Failed to sign user avatar in task:", err);
+            }
+        }
+    };
+
+    if (taskObj.createdBy) await signUserAvatar(taskObj.createdBy);
+    if (taskObj.completedBy) await signUserAvatar(taskObj.completedBy);
+    if (taskObj.updatedBy) await signUserAvatar(taskObj.updatedBy);
+    if (taskObj.lastMovedBy) await signUserAvatar(taskObj.lastMovedBy);
+
+    if (taskObj.assignedTo && taskObj.assignedTo.length > 0) {
+        for (let user of taskObj.assignedTo) {
+            await signUserAvatar(user);
+        }
+    }
+
+    return taskObj;
+};
 
 const canAccessProject = (project, userId) =>
     project.visibility === "workspace" ||
@@ -59,7 +88,7 @@ const createTask = async ({ taskData, user, project, column }) => {
         const member = workspace.members.find(
             (m) => m.user.toString() === user._id.toString()
         );
-        const isAdmin = (member && member.role === "admin") || (user.role === "admin");
+        const isAdmin = (member && member.role === "admin");
         if (!isAdmin) {
             throw new Error("Access Denied: Only admins can assign users to tasks");
         }
@@ -108,7 +137,7 @@ const createTask = async ({ taskData, user, project, column }) => {
     await task.populate([
         { path: "project", select: "name" },
         { path: "column", select: "name" },
-        { path: "createdBy", select: "username email" },
+        { path: "createdBy", select: "username email avatar" },
         { path: "assignedTo", select: "username email avatar" },
     ]);
 
@@ -137,7 +166,7 @@ const createTask = async ({ taskData, user, project, column }) => {
         }
     );
 
-    return task;
+    return await signTaskAvatars(task);
 };
 
 const getTasks = async (projectId, user) => {
@@ -148,16 +177,16 @@ const getTasks = async (projectId, user) => {
         project: projectId,
         isArchived: false,
     })
-        .populate("createdBy", "username email")
-        .populate("assignedTo", "username email")
+        .populate("createdBy", "username email avatar")
+        .populate("assignedTo", "username email avatar")
         .populate("column", "name")
         .populate("project", "name")
-        .populate("completedBy", "username email")
-        .populate("updatedBy", "username email")
-        .populate("lastMovedBy", "username email")
+        .populate("completedBy", "username email avatar")
+        .populate("updatedBy", "username email avatar")
+        .populate("lastMovedBy", "username email avatar")
         .sort({ position: 1 });
 
-    return tasks;
+    return Promise.all(tasks.map(signTaskAvatars));
 };
 
 const updateTask = async ({ taskId, taskData, user }) => {
@@ -181,7 +210,7 @@ const updateTask = async ({ taskId, taskData, user }) => {
         const member = workspace.members.find(
             (m) => m.user.toString() === user._id.toString()
         );
-        const isAdmin = (member && member.role === "admin") || (user.role === "admin");
+        const isAdmin = (member && member.role === "admin");
         if (!isAdmin) {
             throw new Error("Access Denied: Only admins can assign or reassign users");
         }
@@ -365,13 +394,13 @@ const updateTask = async ({ taskId, taskData, user }) => {
     }
 
     const populateTask = await Task.findById(taskId)
-        .populate("createdBy", "username email")
-        .populate("assignedTo", "username email")
+        .populate("createdBy", "username email avatar")
+        .populate("assignedTo", "username email avatar")
         .populate("column", "name")
         .populate("project", "name")
-        .populate("completedBy", "username email")
-        .populate("updatedBy", "username email")
-        .populate("lastMovedBy", "username email");
+        .populate("completedBy", "username email avatar")
+        .populate("updatedBy", "username email avatar")
+        .populate("lastMovedBy", "username email avatar");
 
     emitToWorkspace(
         workspace._id.toString(),
@@ -383,7 +412,7 @@ const updateTask = async ({ taskId, taskData, user }) => {
             actorId: user._id.toString(),
         }
     );
-    return populateTask;
+    return await signTaskAvatars(populateTask);
 };
 
 const deleteTask = async ({ taskId, user }) => {
@@ -539,14 +568,14 @@ const getArchivedTasks = async (projectId, userId) => {
         project: projectId,
         isArchived: true,
     })
-        .populate("createdBy", "username email")
-        .populate("assignedTo", "username email")
+        .populate("createdBy", "username email avatar")
+        .populate("assignedTo", "username email avatar")
         .populate("column", "name")
         .populate("project", "name")
-        .populate("completedBy", "username email")
-        .populate("updatedBy", "username email")
-        .populate("lastMovedBy", "username email")
-        .populate("archivedBy", "username email")
+        .populate("completedBy", "username email avatar")
+        .populate("updatedBy", "username email avatar")
+        .populate("lastMovedBy", "username email avatar")
+        .populate("archivedBy", "username email avatar")
         .sort({ archivedAt: -1 });
 }
 
@@ -568,7 +597,7 @@ const moveTask = async ({ taskId, columnId, user }) => {
     const member = workspace.members.find(
         (m) => m.user.toString() === user._id.toString()
     );
-    const isAdmin = (member && member.role === "admin") || (user.role === "admin");
+    const isAdmin = (member && member.role === "admin");
 
     const isAssigned = (task.assignedTo || []).some(
         (assigneeId) => assigneeId.toString() === user._id.toString()
@@ -684,7 +713,7 @@ const moveTask = async ({ taskId, columnId, user }) => {
         }
     );
 
-    return populatedTask;
+    return await signTaskAvatars(populatedTask);
 };
 
 module.exports = {

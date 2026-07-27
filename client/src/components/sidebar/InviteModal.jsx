@@ -18,7 +18,12 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
   const [inviteLink, setInviteLink] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const [failedAvatars, setFailedAvatars] = useState({});
   const { showAlert } = useAlert();
+
+  const handleAvatarError = (userId) => {
+    setFailedAvatars(prev => ({ ...prev, [userId]: true }));
+  };
   const {
     socket,
     isConnected,
@@ -424,9 +429,18 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                           isDark ? 'hover:bg-slate-900/50' : 'hover:bg-slate-50'
                         }`}
                       >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0 ${user.avatarColor}`}>
-                          {getInitials(user.username)}
-                        </div>
+                        {user.avatar && !failedAvatars[user._id] ? (
+                          <img 
+                            src={user.avatar} 
+                            alt="" 
+                            onError={() => handleAvatarError(user._id)}
+                            className="w-7 h-7 rounded-full object-cover shrink-0" 
+                          />
+                        ) : (
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0 ${user.avatarColor}`}>
+                            {getInitials(user.username)}
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <p className={`text-xs font-semibold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{user.username}</p>
                           <p className={`text-[10px] truncate ${isDark ? 'text-slate-450' : 'text-slate-500'}`}>{user.email}</p>
@@ -541,9 +555,18 @@ export default function InviteModal({ isOpen, workspaceId, onClose }) {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {/* Circular Avatar with initials */}
-                    <div className={`w-8.5 h-8.5 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 ${member.avatarColor || 'bg-slate-700'}`}>
-                      {getInitials(member.username)}
-                    </div>
+                    {member.avatar && !failedAvatars[member._id] ? (
+                      <img 
+                        src={member.avatar} 
+                        alt="" 
+                        onError={() => handleAvatarError(member._id)}
+                        className="w-8.5 h-8.5 rounded-full object-cover shrink-0" 
+                      />
+                    ) : (
+                      <div className={`w-8.5 h-8.5 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 ${member.avatarColor || 'bg-slate-700'}`}>
+                        {getInitials(member.username)}
+                      </div>
+                    )}
 
                     {/* Profile descriptors */}
                     <div className="min-w-0">
