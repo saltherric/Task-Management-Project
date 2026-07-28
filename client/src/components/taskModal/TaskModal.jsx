@@ -57,6 +57,9 @@ export default function TaskModal({
   };
 
   const handleDeleteTask = async () => {
+    if (!window.confirm("Are you sure you want to permanently delete this task? This action cannot be undone.")) {
+      return;
+    }
     try {
       await deleteTask(localTask._id);
       onDeleteTask(localTask._id);
