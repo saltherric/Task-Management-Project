@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import API from '../services/api';
@@ -16,6 +16,14 @@ function Login() {
   const [errors, setErrors] = useState({});
 
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRemember(true);
+    }
+  }, []);
 
   const validate = () => {
     const tempErrors = {};
@@ -49,6 +57,12 @@ function Login() {
         'userInfo',
         JSON.stringify(response.data)
       );
+
+      if (remember) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
      
       showAlert('Logged in successfully.', 'success');
       navigate(redirectTo, { replace: true });
@@ -125,9 +139,9 @@ function Login() {
               />
               <span>Remember me</span>
             </label>
-            <a className="forgot-password text-(--color-primary) font-medium hover:underline" href="#forgot">
+            <Link className="forgot-password text-(--color-primary) font-medium hover:underline" to="/forgot-password">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           {/* Submit Button */}

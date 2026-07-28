@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { registerUser, loginUser, googleCallback, getMe, updateMe, verifyEmail, resendVerification } = require('../controllers/authController');
+const { registerUser, loginUser, googleCallback, getMe, updateMe, verifyEmail, resendVerification, forgotPassword, resetPassword } = require('../controllers/authController');
 const passport = require("passport");
 const { authMiddleware } = require("../middleware/authMiddleware");
 
@@ -26,6 +26,8 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.get("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerification);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 // Profile routes
 // This route fetches the current logged-in user profile details

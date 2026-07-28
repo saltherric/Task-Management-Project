@@ -132,9 +132,95 @@ const googleLoginService = async (user) => {
     };
 };
 
+const forgotPasswordService = async ({ email }, clientUrl) => {
+    if (!email) {
+        throw new Error("Email is required.");
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new Error("No user registered with this email address.");
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour expiration
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetPasswordExpires;
+    await user.save();
+
+    // Send reset email
+    const fallbackClientUrl = clientUrl || process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = `${fallbackClientUrl}/reset-password?token=${resetToken}`;
+    const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h2 style="color: #4F46E5; text-align: center;">Reset Your Password</h2>
+            <p>Hello ${user.username},</p>
+            <p>You requested to reset your password. Please click the button below to set a new password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
+            </div>
+            <p>This link will expire in 1 hour.</p>
+            <p>If you did not request this, you can safely ignore this email.</p>
+            <hr style="border: 0; border-top: 1px solid #eaeaea; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #888888; text-align: center;">TaskMe Team</p>
+        </div>
+    `;
+
+    try {
+        await sendEmail({
+            to: email,
+            subject: "Reset your password",
+            html: emailHtml,
+        });
+    } catch (err) {
+        console.error("Failed to send password reset email:", err);
+        // Clear token since email failed
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
+        throw new Error("Failed to send password reset email. Please try again later.");
+    }
+
+    return { message: "Password reset link sent successfully! Please check your email." };
+};
+
+const resetPasswordService = async ({ token, password }) => {
+    if (!token) {
+        throw new Error("Reset token is required.");
+    }
+    if (!password || password.length < 6) {
+        throw new Error("Password must be at least 6 characters.");
+    }
+
+    const user = await User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        throw new Error("Invalid or expired reset token.");
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashPassword = await bcrypt.hash(password, salt);
+
+    user.password = hashPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    user.lastPasswordChangedAt = Date.now();
+    await user.save();
+
+    return { message: "Password reset successful! You can now log in with your new password." };
+};
+
 module.exports = {
     generateToken,
     registerUserService,
     loginUserService,
     googleLoginService,
+    forgotPasswordService,
+    resetPasswordService,
 };

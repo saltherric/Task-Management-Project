@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Loader2 } from "lucide-react";
-import { resendVerificationEmail } from "../services/verificationApi";
+import { Mail, Loader2, ArrowLeft } from "lucide-react";
+import API from "../services/api";
 import { useAlert } from "../contexts/AlertContext";
 
-function ResendVerificationPage() {
+function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState("idle"); // idle, loading, success, error
     const [message, setMessage] = useState("");
@@ -24,15 +24,15 @@ function ResendVerificationPage() {
         }
 
         try {
-            const response = await resendVerificationEmail(email);
+            const response = await API.post("/auth/forgot-password", { email });
             setStatus("success");
-            const successMsg = response.data.message || "Verification email sent! Please check your inbox.";
+            const successMsg = response.data.message || "Reset link sent! Please check your email.";
             setMessage(successMsg);
             showAlert(successMsg, "success");
             setEmail("");
         } catch (error) {
             setStatus("error");
-            const errorMsg = error.response?.data?.message || "Failed to send verification email. Please try again.";
+            const errorMsg = error.response?.data?.message || "Failed to send reset link. Please try again.";
             setMessage(errorMsg);
             showAlert(errorMsg, "error");
         }
@@ -47,9 +47,9 @@ function ResendVerificationPage() {
                             <Mail className="w-8 h-8 text-(--color-primary)" />
                         </div>
                     </div>
-                    <h1 className="mb-4 text-3xl font-semibold text-(--color-text)">Email Sent!</h1>
+                    <h1 className="mb-4 text-3xl font-semibold text-(--color-text)">Reset Link Sent!</h1>
                     <p className="text-(--color-muted) mb-8 text-base leading-relaxed">
-                        We've sent a new verification link to your email address. Please check your inbox and click the link to activate your account.
+                        We've sent a password reset link to your email address. Please check your inbox and click the link to reset your password.
                     </p>
                     <div className="space-y-4">
                         <Link
@@ -67,9 +67,9 @@ function ResendVerificationPage() {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-3">
             <div className="bg-(--color-card) backdrop-blur-[10px] border border-indigo-600/10 rounded-3xl py-10 px-[35px] w-full max-w-[420px] text-center shadow-[0_8px_32px_rgba(30,41,59,0.10)]">
-                <h1 className="mb-9 pb-4 text-4xl font-semibold text-(--color-text)">Resend Email</h1>
-                <p className="register-subtitle mb-6 text-sm text-(--color-muted)">
-                    Enter your email address to receive a new verification link.
+                <h1 className="mb-4 text-3xl font-semibold text-(--color-text)">Forgot Password</h1>
+                <p className="register-subtitle mb-8 text-sm text-(--color-muted) leading-relaxed">
+                    Enter your email address and we'll send you a link to reset your password.
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -101,13 +101,21 @@ function ResendVerificationPage() {
                                 Sending...
                             </>
                         ) : (
-                            "Send Verification Email"
+                            "Send Reset Link"
                         )}
                     </button>
                 </form>
+
+                {/* Footer */}
+                <div className="mt-8 flex justify-center">
+                    <Link to="/login" className="flex items-center gap-2 text-sm font-semibold text-(--color-muted) hover:text-(--color-primary) transition-colors">
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Login
+                    </Link>
+                </div>
             </div>
         </div>
     );
 }
 
-export default ResendVerificationPage;
+export default ForgotPasswordPage;

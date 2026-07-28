@@ -10,6 +10,8 @@ import Analytics from "../features/Analytics";
 import Activity from "../features/Activity";
 import SettingsPage from "../features/SettingsPage"; 
 import OAuthSuccessPage from "../features/OAuthSuccessPage";
+import ForgotPasswordPage from "../features/ForgotPasswordPage";
+import ResetPasswordPage from "../features/ResetPasswordPage";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 import MainLayout from "../components/layout/MainLayout";
@@ -28,6 +30,8 @@ function AppRoutes() {
         <Route path="/api/auth/verify-email" element={<VerifyEmailPage />} />
         <Route path="/resend-verification" element={<ResendVerificationPage />} />
         <Route path="/oauth-success" element={<OAuthSuccessPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Invite Route (Public) */}
         <Route

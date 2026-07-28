@@ -1,4 +1,4 @@
-const { registerUserService, loginUserService, googleLoginService  } = require("../services/authService");
+const { registerUserService, loginUserService, googleLoginService, forgotPasswordService, resetPasswordService } = require("../services/authService");
 const User = require("../models/User"); // Import the User model from the database folder
 const { generateSignedUrl } = require("../services/signedUrl");
 const { deleteFile } = require("../services/uploadFile");
@@ -220,6 +220,25 @@ const resendVerification = async (req, res, next) => {
     }
 };
 
+const forgotPassword = async (req, res, next) => {
+    try {
+        const clientUrl = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:5173';
+        const result = await forgotPasswordService(req.body, clientUrl);
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const resetPassword = async (req, res, next) => {
+    try {
+        const result = await resetPasswordService(req.body);
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -227,5 +246,7 @@ module.exports = {
     getMe,
     updateMe,
     verifyEmail,
-    resendVerification
+    resendVerification,
+    forgotPassword,
+    resetPassword
 };
