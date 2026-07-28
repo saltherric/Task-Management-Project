@@ -24,15 +24,7 @@ export default function Dashboard() {
     setFailedAvatars(prev => ({ ...prev, [userId]: true }));
   };
 
-  const [userName, setUserName] = useState(() => {
-    try {
-      const rawUserInfo = localStorage.getItem('userInfo');
-      const storedUserInfo = rawUserInfo ? JSON.parse(rawUserInfo) : null;
-      return storedUserInfo?.name || storedUserInfo?.username || storedUserInfo?.fullName || 'User';
-    } catch {
-      return 'User';
-    }
-  });
+
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -535,7 +527,7 @@ export default function Dashboard() {
       {/* 1. HEADER ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-medium tracking-tight">{greeting}, {userName}</h1>
+          <h1 className="text-2xl md:text-3xl font-medium tracking-tight">{greeting}, {currentUser?.username || currentUser?.name || 'User'}</h1>
           <p className={`text-xs md:text-sm mt-1.5 font-normal ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             Here's what's happening across your workspace today.
           </p>

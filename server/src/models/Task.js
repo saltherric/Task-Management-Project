@@ -60,7 +60,6 @@ const taskSchema = new mongoose.Schema(
             'medium',
             'high',
          ],
-         default: 'medium',
       },
 
       smartPriorityScore: {

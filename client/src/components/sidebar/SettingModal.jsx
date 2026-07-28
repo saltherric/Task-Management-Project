@@ -61,7 +61,7 @@ export default function SettingModal({
 
   const { socket, joinWorkspace, leaveWorkspace } = useSocket();
 
-  const currentUser = useMemo(() => getStoredUserInfo(), []);
+  const currentUser = getStoredUserInfo();
   const currentUserId = currentUser?._id || currentUser?.id;
   const dirtyFieldsRef = useRef({});
 

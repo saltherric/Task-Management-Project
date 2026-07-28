@@ -43,7 +43,7 @@ function Board() {
     showAlert(text, type);
   };
 
-  const currentUser = useMemo(() => getStoredUserInfo(), []);
+  const currentUser = getStoredUserInfo();
   const currentUserId = currentUser?._id || currentUser?.id;
 
   const isUserAdmin = useMemo(() => {

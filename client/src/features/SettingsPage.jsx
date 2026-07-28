@@ -3,12 +3,6 @@ import { ThemeContext } from '../contexts/ThemeContext';
 import { getStoredUserInfo, updateStoredUserInfo } from '../helpers/auth';
 import { updateProfile, getProfile } from '../services/authApi';
 import { useAlert } from '../contexts/AlertContext';
-import { 
-  getNotifications, 
-  markAllNotificationsAsRead, 
-  markNotificationAsRead, 
-  deleteNotification 
-} from '../services/notificationService';
 import API from '../services/api';
 
 export default function SettingsPage() {
@@ -68,83 +62,6 @@ export default function SettingsPage() {
     }
   };
 
-  const [userNotifications, setUserNotifications] = useState([]);
-  const [loadingNotifications, setLoadingNotifications] = useState(false);
-
-  const loadNotificationsData = async () => {
-    try {
-      setLoadingNotifications(true);
-      const res = await getNotifications(50);
-      if (res && res.notifications) {
-        setUserNotifications(res.notifications);
-      }
-    } catch (err) {
-      console.error("Failed to fetch settings notifications list", err);
-    } finally {
-      setLoadingNotifications(false);
-    }
-  };
-
-  useEffect(() => {
-    loadNotificationsData();
-  }, []);
-
-  const formatRelativeTime = (dateValue) => {
-    if (!dateValue) return 'Just now';
-    const date = new Date(dateValue);
-    const diffInMinutes = Math.floor((Date.now() - date.getTime()) / 60000);
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
-  };
-
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'TASK_ASSIGNED':
-      case 'TASK_UNASSIGNED':
-      case 'TASK_UPDATED':
-      case 'TASK_MOVED':
-      case 'TASK_COMPLETED':
-      case 'TASK_DELETED':
-      case 'PROJECT_ADDED':
-      case 'PROJECT_REMOVED':
-        return (
-          <div className={`p-1.5 rounded-lg ${isDark ? 'bg-emerald-950/50 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-          </div>
-        );
-      case 'COMMENT_ADDED':
-      case 'COMMENT_REPLY':
-      case 'MENTION':
-        return (
-          <div className={`p-1.5 rounded-lg ${isDark ? 'bg-indigo-950/50 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-          </div>
-        );
-      case 'TASK_DUE_SOON':
-      case 'TASK_OVERDUE':
-        return (
-          <div className={`p-1.5 rounded-lg ${isDark ? 'bg-amber-950/50 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          </div>
-        );
-      case 'WORKSPACE_INVITE':
-      case 'WORKSPACE_JOINED':
-      case 'WORKSPACE_ROLE_CHANGED':
-      case 'ATTACHMENT_ADDED':
-      case 'TAG_ADDED':
-      case 'INVITE_ACCEPTED':
-      default:
-        return (
-          <div className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-900/50 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          </div>
-        );
-    }
-  };
 
   // Fetch the latest user configuration when the page loads
   useEffect(() => {
@@ -257,7 +174,7 @@ export default function SettingsPage() {
         
         {/* Page Title & Subtitle Header */}
         <div className="border-b pb-5 border-slate-200 dark:border-slate-800">
-          <h1 className="text-3xl font-extrabold tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className={`text-sm mt-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             Manage your account, workspace and integrations.
           </p>
@@ -283,9 +200,6 @@ export default function SettingsPage() {
                 <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Profile
                 </h3>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  This information will appear on your activity and assignments.
-                </p>
               </div>
 
               {/* Avatar circle & upload actions row */}
@@ -477,115 +391,6 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* CARD 3: NOTIFICATION HISTORY CARD */}
-            <div className={`border rounded-2xl p-6 shadow-xs ${
-              isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200/80 bg-white'
-            }`}>
-              <div className="flex items-center justify-between border-b pb-4 border-slate-200 dark:border-slate-800">
-                <div>
-                  <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    Notification History
-                  </h3>
-                  <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    View and manage your recent in-app notifications.
-                  </p>
-                </div>
-                {userNotifications.filter(n => !n.isRead).length > 0 && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        await markAllNotificationsAsRead();
-                        setUserNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-                        showAlert("All notifications marked as read.", "success");
-                      } catch (err) {
-                        showAlert("Failed to mark all as read.", "error");
-                      }
-                    }}
-                    className="text-xs font-semibold text-indigo-500 hover:text-indigo-400 cursor-pointer"
-                  >
-                    Mark all as read
-                  </button>
-                )}
-              </div>
-
-              {loadingNotifications ? (
-                <div className="flex justify-center py-8">
-                  <svg className="animate-spin h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                </div>
-              ) : userNotifications.length === 0 ? (
-                <div className={`py-8 text-center text-sm mt-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  No notifications found.
-                </div>
-              ) : (
-                <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-800 max-h-[400px] overflow-y-auto pr-1">
-                  {userNotifications.map((notif) => (
-                    <div 
-                      key={notif._id}
-                      className="flex items-center justify-between py-3.5 gap-4 group"
-                    >
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className="mt-0.5 shrink-0">
-                          {getNotificationIcon(notif.type)}
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`text-xs leading-relaxed ${
-                            notif.isRead 
-                              ? isDark ? 'text-slate-400' : 'text-slate-500' 
-                              : isDark ? 'text-slate-100 font-semibold' : 'text-slate-850 font-semibold'
-                          }`}>
-                            {notif.message || notif.title}
-                          </p>
-                          <span className={`text-[10px] block mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            {formatRelativeTime(notif.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        {!notif.isRead && (
-                          <button
-                            title="Mark as read"
-                            onClick={async () => {
-                              try {
-                                await markNotificationAsRead(notif._id);
-                                setUserNotifications(prev => prev.map(n => n._id === notif._id ? { ...n, isRead: true } : n));
-                                showAlert("Notification marked as read.", "success");
-                              } catch (err) {
-                                showAlert("Failed to mark notification.", "error");
-                              }
-                            }}
-                            className={`p-1 px-1.5 rounded-md border text-[10px] font-bold ${
-                              isDark ? 'border-slate-800 hover:bg-slate-800 text-indigo-400' : 'border-slate-200 hover:bg-slate-50 text-indigo-600'
-                            } cursor-pointer`}
-                          >
-                            Mark read
-                          </button>
-                        )}
-                        <button
-                          title="Delete notification"
-                          onClick={async () => {
-                            try {
-                              await deleteNotification(notif._id);
-                              setUserNotifications(prev => prev.filter(n => n._id !== notif._id));
-                              showAlert("Notification deleted.", "success");
-                            } catch (err) {
-                              showAlert("Failed to delete notification.", "error");
-                            }
-                          }}
-                          className="p-1 rounded-md text-rose-500 hover:bg-rose-500/10 cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
           </div>

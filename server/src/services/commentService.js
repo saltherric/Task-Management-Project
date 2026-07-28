@@ -43,6 +43,61 @@ const createComment = async({ taskId, user, commentData}) => {
         }
     }
 
+    // Send notifications for comment & mentions
+    try {
+        const mentionsRegex = /@([a-zA-Z0-9_-]+)/g;
+        const matches = comment.content.match(mentionsRegex) || [];
+        const mentionedUsernames = [...new Set(matches.map(m => m.substring(1)))];
+        
+        const mentionedUserIds = new Set();
+        
+        const User = require("../models/User");
+        const { notifyMention } = require("../utils/mentionNotifications");
+        const { notifyCommentAdded } = require("../utils/commentNotifications");
+
+        for (const username of mentionedUsernames) {
+            const mentionedUser = await User.findOne({
+                username: { $regex: new RegExp("^" + username + "$", "i") }
+            }).select("_id");
+            
+            if (mentionedUser) {
+                const mentionedUserIdStr = mentionedUser._id.toString();
+                mentionedUserIds.add(mentionedUserIdStr);
+                
+                // Do not notify commenter themselves
+                if (mentionedUserIdStr !== user._id.toString()) {
+                    await notifyMention({
+                        recipient: mentionedUser._id,
+                        sender: user,
+                        workspace: project ? project.workspace : null,
+                        project: project ? project._id : null,
+                        task,
+                        comment
+                    });
+                }
+            }
+        }
+
+        // Send comment notification to other task assignees who were not explicitly mentioned
+        if (task.assignedTo && task.assignedTo.length > 0) {
+            for (const assigneeId of task.assignedTo) {
+                const assigneeIdStr = assigneeId.toString();
+                if (assigneeIdStr !== user._id.toString() && !mentionedUserIds.has(assigneeIdStr)) {
+                    await notifyCommentAdded({
+                        recipient: assigneeId,
+                        sender: user,
+                        workspace: project ? project.workspace : null,
+                        project: project ? project._id : null,
+                        task,
+                        comment
+                    });
+                }
+            }
+        }
+    } catch (notifError) {
+        console.error("Failed to send comment/mention notifications:", notifError);
+    }
+
     return await Comment.findById(comment._id)
         .populate("user", "username email avatar");
 

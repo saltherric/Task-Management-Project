@@ -1,4 +1,6 @@
-export const notifyCommentAdded = async ({
+const { createNotification } = require("../services/notificationService");
+
+const notifyCommentAdded = async ({
   recipient,
   sender,
   workspace,
@@ -8,20 +10,17 @@ export const notifyCommentAdded = async ({
 }) => {
   return createNotification({
     recipient,
-    sender: sender._id,
-
+    sender: sender._id || sender,
     workspace,
     project,
-    task: task._id,
-
+    task: task._id || task,
     type: "COMMENT_ADDED",
-
     title: "New Comment",
-
-    message: `${sender.username} commented on "${task.title}".`,
-
+    message: `${sender.username || 'Someone'} commented on "${task.title}".`,
     metadata: {
-      commentId: comment._id,
+      commentId: comment._id || comment,
     },
   });
 };
+
+module.exports = { notifyCommentAdded };

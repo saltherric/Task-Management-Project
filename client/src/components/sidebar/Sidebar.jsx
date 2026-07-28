@@ -340,8 +340,6 @@ function Sidebar({ isOpen, onClose }) {
             </button>
           </div>
 
-
-
           {/* Workspace switcher */}
           <div className="relative" ref={dropdownRef}>
             <button
@@ -480,74 +478,77 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* ── Divider ── */}
-        <div className={`my-6 h-px w-full ${isDark ? 'bg-slate-800/60' : 'bg-slate-200/80'}`} />
+        {workspaces.length > 0 && (
+          <div className={`my-6 h-px w-full ${isDark ? 'bg-slate-800/60' : 'bg-slate-200/80'}`} />
+        )}
 
         {/* ── Projects ── */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between px-3 pb-2">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Projects
-            </div>
-            <div className='flex gap-1'>
-              <button
-                onClick={() => setShowCreateProjectModal(true)}
-                className={`text-[#6366F1] hover:text-indigo-400 p-1 rounded ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-200'} transition-colors focus:outline-none`}
-                title="Create Project"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={() => setProjectsExpanded(v => !v)}
-                className={`text-slate-500 transition-colors ${isDark ? 'hover:text-slate-300' : 'hover:text-slate-700'}`}
-                aria-label={projectsExpanded ? 'Collapse projects' : 'Expand projects'}
-              >
-                <svg
-                  className={`h-3.5 w-3.5 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`}
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"
+        {workspaces.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between px-3 pb-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Projects
+              </div>
+              <div className='flex gap-1'>
+                <button
+                  onClick={() => setShowCreateProjectModal(true)}
+                  className={`text-[#6366F1] hover:text-indigo-400 p-1 rounded ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-200'} transition-colors focus:outline-none`}
+                  title="Create Project"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProjectsExpanded(v => !v)}
+                  className={`text-slate-500 transition-colors ${isDark ? 'hover:text-slate-300' : 'hover:text-slate-700'}`}
+                  aria-label={projectsExpanded ? 'Collapse projects' : 'Expand projects'}
+                >
+                  <svg
+                    className={`h-3.5 w-3.5 transition-transform ${projectsExpanded ? '' : '-rotate-90'}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
+              </div>
             </div>
+            
+            {projectsExpanded && (
+              <div className="space-y-1">
+                {projects.map((project) => (
+                  <div
+                      key={project._id}
+                      onClick={() => {
+                        navigate(
+                          `/workspaces/${workspaceId}/projects/${project._id}`
+                        );
+                        onClose?.();
+                      }}
+                      className={`group flex cursor-pointer items-center gap-3.5 px-3 py-2 text-sm font-semibold transition-colors ${
+                        projectId === project._id
+                            ? isDark
+                              ? 'bg-white/[0.05] text-white rounded-md'
+                              : 'bg-slate-100 text-slate-900 rounded-md'
+                            : isDark
+                              ? 'text-slate-300 hover:text-white hover:bg-white/[0.02] rounded-md'
+                              : 'text-slate-650 hover:text-slate-900 hover:bg-slate-100 rounded-md'
+                      }`}
+                  >
+                      {project.visibility === 'private' ? (
+                        <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0 animate-fade-in" title="Private Project" />
+                      ) : (
+                        <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0 animate-fade-in" title="Workspace Project" />
+                      )}
+                      <span className="text-xs truncate">{project.name}</span>
+                  </div>                      
+                ))}
+              </div>
+            )}
           </div>
-          
-          {projectsExpanded && (
-            <div className="space-y-1">
-              {projects.map((project) => (
-                <div
-                    key={project._id}
-                    onClick={() => {
-                      navigate(
-                        `/workspaces/${workspaceId}/projects/${project._id}`
-                      );
-                      onClose?.();
-                    }}
-                    className={`group flex cursor-pointer items-center gap-3.5 px-3 py-2 text-sm font-semibold transition-colors ${
-                      projectId === project._id
-                          ? isDark
-                            ? 'bg-white/[0.05] text-white rounded-md'
-                            : 'bg-slate-100 text-slate-900 rounded-md'
-                          : isDark
-                            ? 'text-slate-300 hover:text-white hover:bg-white/[0.02] rounded-md'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md'
-                    }`}
-                >
-                    {project.visibility === 'private' ? (
-                      <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0 animate-fade-in" title="Private Project" />
-                    ) : (
-                      <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0 animate-fade-in" title="Workspace Project" />
-                    )}
-                    <span className="text-xs truncate">{project.name}</span>
-                </div>                      
-              ))}
-            </div>
-          )}
-        </div>
-
+        )}
       </div>
     </aside>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Info, Globe, Lock, Archive, Copy, Trash2, ChevronLeft, Edit2, RotateCcw, Loader2 } from 'lucide-react';
+import { X, Users, Info, Globe, Lock, Archive, Trash2, ChevronLeft, Edit2, RotateCcw, Loader2 } from 'lucide-react';
 import useAutoSave from '../../hooks/useAutoSave';
 import { updateProject } from '../../services/projectApi';
 import { getArchivedTasksByProject, unArchiveTask, deleteTask } from '../../services/taskApi';
@@ -272,19 +272,6 @@ export default function MenuModal({
                                 </button>
                             </div>
 
-                            {/* Copy Board */}
-                            <div className="px-3 py-2">
-                                <button
-                                    onClick={onCopyBoard}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left cursor-pointer ${isDark
-                                            ? 'hover:bg-white/[0.04] text-slate-350 hover:text-white'
-                                            : 'hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200/60 shadow-xs'
-                                        }`}
-                                >
-                                    <Copy className={`w-4 h-4 ${isDark ? 'text-slate-450' : 'text-slate-550'}`} />
-                                    <span className="text-xs font-semibold">Copy board</span>
-                                </button>
-                            </div>
 
                             {/* Delete Project */}
                             <div className="px-3 py-2">

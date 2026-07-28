@@ -3,6 +3,7 @@ import {getComments, createComment} from "../../services/commentApi";
 import { getStoredUserInfo } from "../../helpers/auth";
 import { useSocket } from "../../contexts/SocketContext";
 import { useAlert } from "../../contexts/AlertContext";
+import { getAvailableAssignees } from "../../services/assignedToApi";
 
 export default function TaskComments({ taskId, updateField }) {
   const [comments, setComments] = useState([]);
@@ -12,6 +13,11 @@ export default function TaskComments({ taskId, updateField }) {
   const currentUser = getStoredUserInfo();
   const { socket, isConnected } = useSocket();
   const { showAlert } = useAlert();
+
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionFilter, setSuggestionFilter] = useState("");
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   useEffect(() => {
     if (!taskId) return;
@@ -32,6 +38,21 @@ export default function TaskComments({ taskId, updateField }) {
     };
 
     fetchComments();
+  }, [taskId]);
+
+  useEffect(() => {
+    if (!taskId) return;
+
+    const fetchAvailableUsers = async () => {
+      try {
+        const data = await getAvailableAssignees(taskId);
+        setAvailableUsers(data.assignees || []);
+      } catch (error) {
+        console.error("Failed to fetch available assignees for mentions: ", error);
+      }
+    };
+
+    fetchAvailableUsers();
   }, [taskId]);
 
   useEffect(() => {
@@ -79,6 +100,75 @@ export default function TaskComments({ taskId, updateField }) {
     }
   };
 
+  const handleTextareaChange = (e) => {
+    const val = e.target.value;
+    setCommentText(val);
+    const pos = e.target.selectionStart;
+    setCursorPosition(pos);
+
+    const textBeforeCursor = val.slice(0, pos);
+    const lastAtIdx = textBeforeCursor.lastIndexOf("@");
+
+    if (lastAtIdx !== -1) {
+      const query = textBeforeCursor.slice(lastAtIdx + 1);
+      const isValidQuery = /^[a-zA-Z0-9_-]*$/.test(query);
+      const charBeforeAt = lastAtIdx > 0 ? textBeforeCursor[lastAtIdx - 1] : "";
+      const isWordStart = lastAtIdx === 0 || /\s/.test(charBeforeAt);
+
+      if (isValidQuery && isWordStart) {
+        setShowSuggestions(true);
+        setSuggestionFilter(query);
+        return;
+      }
+    }
+    setShowSuggestions(false);
+  };
+
+  const insertMention = (user) => {
+    const val = commentText;
+    const pos = cursorPosition;
+    const textBeforeCursor = val.slice(0, pos);
+    const lastAtIdx = textBeforeCursor.lastIndexOf("@");
+    
+    if (lastAtIdx !== -1) {
+      const textAfterCursor = val.slice(pos);
+      const before = val.slice(0, lastAtIdx);
+      const mention = `@${user.username} `;
+      const newText = before + mention + textAfterCursor;
+      setCommentText(newText);
+      setShowSuggestions(false);
+      
+      setTimeout(() => {
+        const textarea = document.getElementById("comment-textarea");
+        if (textarea) {
+          textarea.focus();
+          const newPos = lastAtIdx + mention.length;
+          textarea.setSelectionRange(newPos, newPos);
+        }
+      }, 0);
+    }
+    setShowSuggestions(false);
+  };
+
+  const filteredUsers = availableUsers.filter((u) =>
+    u.username?.toLowerCase().includes(suggestionFilter.toLowerCase())
+  );
+
+  const renderCommentContent = (content) => {
+    if (!content) return "";
+    const parts = content.split(/(\B@[a-zA-Z0-9_-]+\b)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("@")) {
+        return (
+          <span key={i} className="text-indigo-650 dark:text-indigo-300 font-semibold bg-indigo-500/10 dark:bg-indigo-500/20 px-1.5 py-0.5 rounded">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-[#1C1D22]">
       <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -102,14 +192,17 @@ export default function TaskComments({ taskId, updateField }) {
               className="bg-slate-50 dark:bg-[#111215] border border-slate-200 dark:border-[#1C1F26] rounded-2xl p-4 space-y-2"
             >
               <div className="flex items-center gap-2.5">
-                <img
-                  src={
-                    comment.user?.avatar ||
-                    "/default-avatar.png"
-                  }
-                  alt="avatar"
-                  className="w-6 h-6 rounded-full object-cover"
-                />
+                {comment.user?.avatar ? (
+                  <img
+                    src={comment.user.avatar}
+                    alt=""
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-indigo-500 text-white font-bold text-[10px] flex items-center justify-center border border-slate-200 dark:border-[#22242B]">
+                    {comment.user?.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
 
                 <span className="text-xs font-bold text-slate-800 dark:text-neutral-200">
                   {comment.user?.username}
@@ -123,7 +216,7 @@ export default function TaskComments({ taskId, updateField }) {
               </div>
 
               <p className="text-xs text-slate-700 dark:text-neutral-300 leading-relaxed pl-8">
-                {comment.content}
+                {renderCommentContent(comment.content)}
               </p>
             </div>
           ))
@@ -134,10 +227,34 @@ export default function TaskComments({ taskId, updateField }) {
         className="mt-4 bg-slate-50 dark:bg-[#111215] border border-slate-200 dark:border-[#21242E] rounded-2xl p-3 relative"
       >
         <div className="relative">
+          {showSuggestions && filteredUsers.length > 0 && (
+            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-[#181B24] border border-slate-200 dark:border-[#2E3342] rounded-xl p-1.5 shadow-2xl z-40 max-h-48 overflow-y-auto">
+              <p className="text-[10px] text-slate-500 dark:text-neutral-500 px-2 py-1 border-b border-slate-100 dark:border-[#242835] mb-1 font-semibold uppercase tracking-wider">Teammates</p>
+              {filteredUsers.map((user) => (
+                <button
+                  key={user._id}
+                  type="button"
+                  onClick={() => insertMention(user)}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left text-xs text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-[#1E212A] rounded-lg transition-colors cursor-pointer"
+                >
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-indigo-500 text-white font-bold text-[8px] flex items-center justify-center">
+                      {user.username?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span>{user.username}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <textarea
+            id="comment-textarea"
             value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Post a comment..."
+            onChange={handleTextareaChange}
+            onSelect={(e) => setCursorPosition(e.target.selectionStart)}
+            placeholder="Post a comment... Use @username to mention a teammate"
             className="w-full bg-transparent text-xs text-slate-800 dark:text-neutral-200 focus:outline-none resize-none min-h-[55px] leading-relaxed"
           />
         </div>
@@ -164,6 +281,32 @@ export default function TaskComments({ taskId, updateField }) {
               title="Add reaction"
             >
               🔥
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const textarea = document.getElementById("comment-textarea");
+                const pos = textarea ? textarea.selectionStart : commentText.length;
+                const val = commentText;
+                const newText = val.slice(0, pos) + "@" + val.slice(pos);
+                setCommentText(newText);
+                setCursorPosition(pos + 1);
+                setShowSuggestions(true);
+                setSuggestionFilter("");
+                setTimeout(() => {
+                  if (textarea) {
+                    textarea.focus();
+                    textarea.setSelectionRange(pos + 1, pos + 1);
+                  }
+                }, 0);
+              }}
+              className="p-1 hover:bg-slate-200 dark:hover:bg-[#1C2029] rounded text-slate-450 dark:text-neutral-400 hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors flex items-center justify-center"
+              title="Mention user"
+            >
+              <svg className="w-3.5 h-3.5 text-slate-500 hover:text-indigo-600 dark:text-neutral-400 dark:hover:text-indigo-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Zm0 0c0 1.657 1.007 3 2.25 3S21 13.657 21 12a9 9 0 1 0-2.636 6.364M16.5 12V8.25" />
+              </svg>
             </button>
           </div>
 
