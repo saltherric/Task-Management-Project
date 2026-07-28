@@ -5,6 +5,7 @@ import { updateProject } from '../../services/projectApi';
 import { getArchivedTasksByProject, unArchiveTask, deleteTask } from '../../services/taskApi';
 import getColumnDotProps from '../../helpers/getDotColors';
 import { useAlert } from '../../contexts/AlertContext';
+import ConfirmDeleteTaskModal from '../taskModal/ConfirmDeleteTaskModal';
 
 export default function MenuModal({
     isOpen,
@@ -39,6 +40,9 @@ export default function MenuModal({
     // Archived Tasks State
     const [archivedTasks, setArchivedTasks] = useState([]);
     const [loadingArchived, setLoadingArchived] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState(null);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [isDeletingTask, setIsDeletingTask] = useState(false);
 
     const fetchArchivedTasks = async () => {
         setLoadingArchived(true);
@@ -69,16 +73,25 @@ export default function MenuModal({
         }
     };
 
-    const handleDeleteTask = async (taskId) => {
-        if (window.confirm("Are you sure you want to permanently delete this task? This action cannot be undone.")) {
-            try {
-                await deleteTask(taskId);
-                setArchivedTasks(prev => prev.filter(t => t._id !== taskId));
-                showAlert('Task deleted permanently.', 'success');
-            } catch (error) {
-                console.error("Failed to delete task:", error);
-                showAlert(error.response?.data?.message || "Failed to delete task.", 'error');
-            }
+    const handleDeleteTask = (task) => {
+        setTaskToDelete(task);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    const handleConfirmDeleteTask = async () => {
+        if (!taskToDelete) return;
+        try {
+            setIsDeletingTask(true);
+            await deleteTask(taskToDelete._id);
+            setArchivedTasks(prev => prev.filter(t => t._id !== taskToDelete._id));
+            setIsDeleteConfirmOpen(false);
+            setTaskToDelete(null);
+            showAlert('Task deleted permanently.', 'success');
+        } catch (error) {
+            console.error("Failed to delete task:", error);
+            showAlert(error.response?.data?.message || "Failed to delete task.", 'error');
+        } finally {
+            setIsDeletingTask(false);
         }
     };
 
@@ -91,6 +104,9 @@ export default function MenuModal({
         setIsEditingName(false);
         setSaveStatus('saved');
         setErrorMsg('');
+        setTaskToDelete(null);
+        setIsDeleteConfirmOpen(false);
+        setIsDeletingTask(false);
     }, [project, isOpen, currentView]);
 
     const saveProjectUpdates = async (updates) => {
@@ -504,16 +520,16 @@ export default function MenuModal({
                                                         <span>Restore</span>
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDeleteTask(task._id)}
-                                                        className={`p-1.5 rounded-lg transition-all hover:scale-105 flex items-center gap-1 cursor-pointer text-[10px] font-semibold ${
-                                                            isDark 
-                                                                ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-450' 
-                                                                : 'bg-rose-50 hover:bg-rose-100 text-rose-600'
-                                                        }`}
-                                                        title="Delete permanently"
-                                                    >
-                                                        <Trash2 className="w-3 h-3" />
-                                                    </button>
+                                                         onClick={() => { setTaskToDelete(task); setIsDeleteConfirmOpen(true); }}
+                                                         className={`p-1.5 rounded-lg transition-all hover:scale-105 flex items-center gap-1 cursor-pointer text-[10px] font-semibold ${
+                                                             isDark 
+                                                                 ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-450' 
+                                                                 : 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                                                         }`}
+                                                         title="Delete permanently"
+                                                     >
+                                                         <Trash2 className="w-3.5 h-3.5" />
+                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -524,6 +540,18 @@ export default function MenuModal({
                     </>
                 )}
             </div>
+            
+            <ConfirmDeleteTaskModal
+                isOpen={isDeleteConfirmOpen}
+                onClose={() => {
+                    setIsDeleteConfirmOpen(false);
+                    setTaskToDelete(null);
+                }}
+                onConfirm={handleConfirmDeleteTask}
+                taskTitle={taskToDelete?.title || ''}
+                isDark={isDark}
+                isDeleting={isDeletingTask}
+            />
         </div>
     );
 }

@@ -13,6 +13,7 @@ import useAutoSave from "../../hooks/useAutoSave";
 import TaskDueDate from "./TaskDueDate";
 import TaskMetaData from "./TaskMetaData";
 import { useAlert } from "../../contexts/AlertContext";
+import ConfirmDeleteTaskModal from "./ConfirmDeleteTaskModal";
 
 export default function TaskModal({
   task,
@@ -29,11 +30,15 @@ export default function TaskModal({
   const [dirtyFields, setDirtyFields] = useState({});
   const [saveStatus, setSaveStatus] = useState("saved");
   const { showAlert } = useAlert();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
 
   useEffect(() => {
     setLocalTask(task);
     setDirtyFields({});
+    setIsDeleteConfirmOpen(false);
+    setIsDeleting(false);
   }, [task]);
 
   const updateField = (
@@ -56,17 +61,22 @@ export default function TaskModal({
     onUpdateTask(updatedTask);
   };
 
-  const handleDeleteTask = async () => {
-    if (!window.confirm("Are you sure you want to permanently delete this task? This action cannot be undone.")) {
-      return;
-    }
+  const handleDeleteTask = () => {
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
     try {
+      setIsDeleting(true);
       await deleteTask(localTask._id);
+      setIsDeleteConfirmOpen(false);
       onDeleteTask(localTask._id);
       showAlert("Task deleted successfully.", "success");
     } catch (error) {
       console.error("Failed to delete task", error);
       showAlert(error.response?.data?.message || "Failed to delete task.", "error");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -183,6 +193,14 @@ export default function TaskModal({
 
       </div>
 
+      <ConfirmDeleteTaskModal
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        taskTitle={localTask?.title || ""}
+        isDark={isDark}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
