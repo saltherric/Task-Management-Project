@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+const sendEmail = require("../utils/sendEmail");
 const { generateAccessToken, generateRefreshToken } = require("../utils/generateToken"); 
 const { generateSignedUrl } = require("./signedUrl");
 
@@ -14,7 +14,7 @@ const generateToken = (id) => {
     );
 };
 
-const registerUserService = async ({ username, email, password }) => {
+const registerUserService = async ({ username, email, password }, clientUrl) => {
     // check existing user
     const userRegistered = await User.findOne({ email });
 
@@ -41,8 +41,8 @@ const registerUserService = async ({ username, email, password }) => {
     });
 
     // send verification email
-    const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:5000/api';
-    const verificationUrl = `${apiBaseUrl}/auth/verify-email?token=${verificationToken}`;
+    const fallbackClientUrl = clientUrl || process.env.CLIENT_URL || 'http://localhost:5173';
+    const verificationUrl = `${fallbackClientUrl}/verify-email?token=${verificationToken}`;
     const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
             <h2 style="color: #4F46E5; text-align: center;">Verify Your Email Address</h2>
@@ -57,25 +57,17 @@ const registerUserService = async ({ username, email, password }) => {
         </div>
     `;
 
-    const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: parseInt(process.env.EMAIL_PORT) || 587,
-        secure: false,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-        },
-    });
-
     try {
-        await transporter.sendMail({
-            from: process.env.EMAIL_FROM,
+        await sendEmail({
             to: email,
             subject: "Verify your email",
             html: emailHtml,
         });
     } catch (err) {
         console.error("Failed to send verification email:", err);
+        // Clean up the created user since they won't be able to log in without email verification
+        await User.deleteOne({ email });
+        throw new Error("Failed to send verification email. Please verify your email configuration and try again.");
     }
 
     return {

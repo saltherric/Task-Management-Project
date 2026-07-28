@@ -3,7 +3,7 @@ const User = require("../models/User"); // Import the User model from the databa
 const { generateSignedUrl } = require("../services/signedUrl");
 const { deleteFile } = require("../services/uploadFile");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+const sendEmail = require("../utils/sendEmail");
 
 const formatUserAvatar = async (user) => {
     if (!user) return user;
@@ -20,7 +20,8 @@ const formatUserAvatar = async (user) => {
 
 const registerUser = async (req, res, next) => {
     try {
-        const user = await registerUserService(req.body);
+        const clientUrl = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:5173';
+        const user = await registerUserService(req.body, clientUrl);
         res.status(201).json(user);
     } catch (error) {
        next(error)
@@ -191,8 +192,8 @@ const resendVerification = async (req, res, next) => {
         user.verificationTokenExpires = verificationTokenExpires;
         await user.save();
 
-        const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:5000/api';
-        const verificationUrl = `${apiBaseUrl}/auth/verify-email?token=${verificationToken}`;
+        const clientUrl = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:5173';
+        const verificationUrl = `${clientUrl}/verify-email?token=${verificationToken}`;
         const emailHtml = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                 <h2 style="color: #4F46E5; text-align: center;">Verify Your Email Address</h2>
@@ -207,18 +208,7 @@ const resendVerification = async (req, res, next) => {
             </div>
         `;
 
-        const transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST,
-            port: parseInt(process.env.EMAIL_PORT) || 587,
-            secure: false,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
-
-        await transporter.sendMail({
-            from: process.env.EMAIL_FROM,
+        await sendEmail({
             to: email,
             subject: "Verify your email",
             html: emailHtml,

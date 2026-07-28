@@ -13,6 +13,7 @@ function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [isRegistered, setIsRegistered] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -60,7 +61,7 @@ function Register() {
       localStorage.removeItem('userInfo');
      
       showAlert('Registered successfully. Please check your email to verify your account.', 'success');
-      navigate('/login');
+      setIsRegistered(true);
       
     } catch (error) {
       console.log(error.response?.data);
@@ -68,6 +69,35 @@ function Register() {
       showAlert(backendMessage || 'Registration failed.', 'danger');
     }
   };
+
+  if (isRegistered) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+        <div className="bg-(--color-card) backdrop-blur-[10px] border border-indigo-600/10 rounded-3xl py-10 px-[35px] w-full max-w-[420px] text-center shadow-[0_8px_32px_rgba(30,41,59,0.10)]">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-indigo-600/10 rounded-full flex items-center justify-center">
+              <Mail className="w-8 h-8 text-(--color-primary)" />
+            </div>
+          </div>
+          <h1 className="mb-4 text-3xl font-semibold text-(--color-text)">Verify your email</h1>
+          <p className="text-(--color-muted) mb-8 text-base leading-relaxed">
+            We've sent a verification link to <span className="font-semibold text-(--color-text) block mt-1 break-all">{email}</span>. Please check your inbox and click the link to activate your account.
+          </p>
+          <div className="space-y-4">
+            <Link
+              to="/login"
+              className="block w-full py-3 bg-(--color-primary) text-(--color-card) font-semibold rounded-xl transition-all duration-200 cursor-pointer shadow-[0_4px_12px_rgba(37,99,235,0.20)] hover:bg-[color-mix(in_srgb,var(--color-primary)_88%,black)]"
+            >
+              Go to Login
+            </Link>
+            <p className="text-sm text-(--color-muted)">
+              Didn't receive the email? <Link to="/resend-verification" className="text-(--color-primary) font-semibold hover:underline">Resend verification</Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3">
