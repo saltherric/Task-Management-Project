@@ -35,8 +35,17 @@ export default function Dashboard() {
   const greeting = getGreeting();
 
   const { socket, isConnected } = useSocket();
-  const currentUser = getStoredUserInfo();
+  const [currentUser, setCurrentUser] = useState(getStoredUserInfo());
   const currentUserId = currentUser?._id || currentUser?.id;
+
+  useEffect(() => {
+    const handleUserUpdate = () => {
+      setCurrentUser(getStoredUserInfo());
+    };
+
+    window.addEventListener('userInfoUpdated', handleUserUpdate);
+    return () => window.removeEventListener('userInfoUpdated', handleUserUpdate);
+  }, []);
 
   useEffect(() => {
     if (!socket || !isConnected || !workspaceId) return;
