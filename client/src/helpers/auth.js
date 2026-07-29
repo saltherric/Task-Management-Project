@@ -37,6 +37,7 @@ const updateStoredUserInfo = (updatedUser) => {
       // Merge the existing details with updated ones (like the name/username)
       const next = { ...current, ...updatedUser };
       localStorage.setItem('userInfo', JSON.stringify(next));
+      window.dispatchEvent(new Event('userInfoUpdated'));
     }
   } catch (e) {
     console.error("Failed to update stored user info in localStorage:", e);

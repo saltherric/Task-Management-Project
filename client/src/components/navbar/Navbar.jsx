@@ -117,6 +117,7 @@ function Navbar({ onMenuClick }) {
         if (user) {
           updateStoredUserInfo({
             name: user.username,
+            username: user.username,
             avatar: user.avatar,
           });
           setCurrentUser({

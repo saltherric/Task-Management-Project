@@ -118,13 +118,13 @@ export default function SettingsPage() {
         // Sync name directly inside the local storage cache
         updateStoredUserInfo({ 
           name: response.username,
+          username: response.username,
           avatar: response.avatar
         });
         setAvatarPreview(response.avatar);
         setAvatarKey(response.avatar);
         setInitialAvatarKey(response.avatar);
         setInitialFullname(response.username);
-        window.dispatchEvent(new Event('userInfoUpdated'));
         showAlert('Profile updated successfully.', 'success');
       }
     } catch (error) {

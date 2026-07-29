@@ -35,6 +35,7 @@ function OAuthSuccessPage() {
         };
 
         localStorage.setItem('userInfo', JSON.stringify(fullUserInfo));
+        window.dispatchEvent(new Event('userInfoUpdated'));
 
         // 4. Success alert and redirect to home
         showAlert('Logged in with Google successfully.', 'success');

@@ -57,6 +57,7 @@ function Login() {
         'userInfo',
         JSON.stringify(response.data)
       );
+      window.dispatchEvent(new Event('userInfoUpdated'));
 
       if (remember) {
         localStorage.setItem('rememberedEmail', email);
