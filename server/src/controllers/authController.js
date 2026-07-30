@@ -120,6 +120,17 @@ const updateMe = async (req, res, next) => {
         // Save the updated user details back to the database
         await user.save();
         
+        // Update the user's socket session details (username, avatar) and broadcast to any active boards
+        try {
+            const { updateUserSockets } = require("../socket/socketGateway");
+            await updateUserSockets(user._id, {
+                avatar: user.avatar,
+                username: user.username,
+            });
+        } catch (socketErr) {
+            console.error("Failed to update user sockets upon profile change:", socketErr);
+        }
+        
         // Convert the database object to a normal JavaScript object
         const updatedUser = user.toObject();
         // Remove the password field from the response object for safety

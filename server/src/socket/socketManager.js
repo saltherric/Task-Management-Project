@@ -4,6 +4,9 @@ const Project = require("../models/Project"); // Import Project model to verify 
 const { getWorkspaceRoom, getProjectRoom } = require("./rooms");
 const { generateSignedUrl } = require("../services/signedUrl");
 
+let ioInstance = null;
+const connectedUsers = new Map();
+
 // This helper function broadcasts the list of active users in a project to everyone in that project room
 const broadcastActiveUsersInProject = async (io, projectId, disconnectingSocketId = null) => {
   const roomName = getProjectRoom(projectId);
@@ -60,8 +63,21 @@ function createOnlineUserSnapshot(connectedUsers) {
   }));
 }
 
+function updateConnectedUser(userId, updatedUserData) {
+  const uIdStr = String(userId);
+  const user = connectedUsers.get(uIdStr);
+  if (user) {
+    user.avatar = updatedUserData.avatar;
+    user.username = updatedUserData.username || user.username;
+  }
+
+  if (ioInstance) {
+    ioInstance.emit("online_users", createOnlineUserSnapshot(connectedUsers));
+  }
+}
+
 function registerSocketHandlers(io) {
-  const connectedUsers = new Map();
+  ioInstance = io;
 
   io.use(authenticateSocket);
 
@@ -272,4 +288,4 @@ function registerSocketHandlers(io) {
   });
 }
 
-module.exports = { registerSocketHandlers };
+module.exports = { registerSocketHandlers, broadcastActiveUsersInProject, updateConnectedUser };
