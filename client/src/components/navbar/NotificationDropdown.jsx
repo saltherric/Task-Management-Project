@@ -11,7 +11,7 @@ function NotificationDropdown({
 }) {
   return (
     <div
-        className = {`absolute right-0 mt-3.5 w-80 origin-top-right rounded-2xl shadow-xl ring-opacity-5 focus:outline-none z-50 ${
+        className = {`absolute right-0 mt-3.5 w-80 max-w-[calc(100vw-2rem)] origin-top-right rounded-2xl shadow-xl ring-opacity-5 focus:outline-none z-50 ${
             isDark 
                 ? "bg-slate-950"
                 : "bg-white"

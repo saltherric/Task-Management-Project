@@ -29,7 +29,7 @@ function ProfileDropdown({
 
   return (
     <div
-      className={`absolute right-0 mt-3.5 w-64 origin-top-right rounded-2xl p-2 shadow-xl  ring-black ring-opacity-5 focus:outline-none z-50 ${
+      className={`absolute right-0 mt-3.5 w-64 max-w-[calc(100vw-2rem)] origin-top-right rounded-2xl p-2 shadow-xl  ring-black ring-opacity-5 focus:outline-none z-50 ${
         isDark
           ? "border-slate-900 bg-slate-950"
           : "border-slate-100 bg-white"

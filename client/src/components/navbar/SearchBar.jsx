@@ -9,6 +9,8 @@ function SearchBar({
   isSearchFocused,
   setIsSearchFocused,
   isDark,
+  mobile = false,
+  onMobileSelect,
 }) {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
@@ -40,6 +42,7 @@ function SearchBar({
   const handleTaskClick = (task) => {
     setIsSearchFocused(false);
     setSearchQuery('');
+    onMobileSelect?.();
     
     const workspaceId = task.project?.workspace?._id || task.project?.workspace;
     const projectId = task.project?._id;
@@ -99,7 +102,7 @@ function SearchBar({
   };
 
   return (
-    <div ref={searchRef} className="relative hidden sm:flex flex-1 max-w-md mx-4 md:mx-8">
+    <div ref={searchRef} className={mobile ? "relative flex flex-1 mx-2" : "relative hidden sm:flex flex-1 max-w-md mx-4 md:mx-8"}>
       {/* Search Input Container */}
       <div className="relative w-full">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">

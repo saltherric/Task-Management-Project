@@ -511,7 +511,7 @@ function Board() {
 
 
   return (
-    <div className={`h-full w-full p-6 md:p-5 overflow-hidden transition-colors duration-300 ${isDark ? 'bg-[#090D16] text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+    <div className={`h-full w-full p-4 sm:p-6 lg:p-8 overflow-hidden transition-colors duration-300 ${isDark ? 'bg-[#090D16] text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       <div className="h-full max-w-7xl mx-auto flex flex-col">
 
         {/* Board Title Area */}
@@ -593,7 +593,7 @@ function Board() {
         </div>
 
         {/* Kanban Board Grid */}
-        <div className="flex-1 flex overflow-x-auto gap-5 pt-3 pb-4 min-h-0 lg:grid lg:grid-cols-4 lg:overflow-hidden notif-scrollbar">
+        <div className="flex-1 flex overflow-x-auto gap-5 pt-3 pb-4 min-h-0 lg:grid lg:grid-cols-4 lg:overflow-hidden notif-scrollbar snap-x snap-mandatory">
           {columns.map((col) => {
             const columnTasks = tasks.filter((task) => {
               const taskColumnId =
@@ -609,7 +609,7 @@ function Board() {
                 key={col._id}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, col._id)}
-                className={`border rounded-2xl p-4 h-full min-h-0 flex flex-col transition-colors duration-300 w-[280px] sm:w-[320px] shrink-0 lg:w-auto lg:flex-1 lg:shrink ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-gray-100 border-slate-200/80 shadow-sm'}`}
+                className={`border rounded-2xl p-4 h-full min-h-0 flex flex-col transition-colors duration-300 w-[280px] sm:w-[320px] shrink-0 lg:w-auto lg:flex-1 lg:shrink snap-center ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-gray-100 border-slate-200/80 shadow-sm'}`}
               >
                 {/* Column Header */}
                 <div className={`flex items-center justify-between mb-4 pb-2 border-b ${isDark ? 'border-slate-900' : 'border-slate-100'}`}>

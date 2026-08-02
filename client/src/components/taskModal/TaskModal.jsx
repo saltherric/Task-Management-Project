@@ -124,7 +124,7 @@ export default function TaskModal({
   return (
     <div className="fixed inset-0 z-50 bg-black/15 backdrop-blur-[2px] flex items-center justify-center">
 
-      <div className={`h-[82vh] w-[calc(100%-2rem)] max-w-5xl rounded-xl overflow-hidden flex flex-col transition-colors duration-300 shadow-2xl ${isDark ? "bg-slate-900 text-slate-100 border border-slate-800/80" : "bg-white text-slate-800 border border-slate-200"
+      <div className={`h-[90vh] sm:h-[82vh] w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-5xl rounded-xl sm:rounded-2xl overflow-hidden flex flex-col transition-colors duration-300 shadow-2xl ${isDark ? "bg-slate-900 text-slate-100 border border-slate-800/80" : "bg-white text-slate-800 border border-slate-200"
         }`}>
 
         {/* Top Area */}
@@ -142,7 +142,7 @@ export default function TaskModal({
         />
 
         {/* Body */}
-        <div className="notif-scrollbar grid lg:grid-cols-[1fr_280px] flex-1 overflow-hidden overflow-y-auto p-6 gap-6">
+        <div className="notif-scrollbar grid lg:grid-cols-[1fr_280px] flex-1 overflow-hidden overflow-y-auto p-4 sm:p-6 gap-4 sm:gap-6">
 
           {/* Left Content */}
           <div className="space-y-8">

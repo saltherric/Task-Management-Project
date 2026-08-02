@@ -332,7 +332,7 @@ export default function Analytics() {
 
   if (isLoading) {
     return (
-      <div className={`w-full h-full flex flex-col p-6 md:p-8 transition-colors duration-300 animate-pulse ${isDarkMode ? 'bg-[#090D16] text-white' : 'bg-slate-50 text-slate-800'
+      <div className={`w-full h-full flex flex-col p-4 sm:p-6 lg:p-8 transition-colors duration-300 animate-pulse ${isDarkMode ? 'bg-[#090D16] text-white' : 'bg-slate-50 text-slate-800'
         }`}>
         <div className="h-10 w-48 bg-slate-300 dark:bg-slate-850 rounded-xl mb-8"></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
@@ -353,7 +353,7 @@ export default function Analytics() {
       }`}>
 
       {/* MAIN LAYOUT CANVAS */}
-      <div className="max-w-7xl px-6 py-5 space-y-8">
+      <div className="max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-8">
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
           <div>

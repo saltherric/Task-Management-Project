@@ -530,7 +530,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className={`w-full h-full flex flex-col min-h-0 overflow-auto p-6 md:p-8 transition-colors duration-300 ${isDarkMode ? 'bg-[#090D16] text-white' : 'bg-slate-50 text-slate-800'
+    <div className={`w-full h-full flex flex-col min-h-0 overflow-auto p-4 sm:p-6 lg:p-8 transition-colors duration-300 ${isDarkMode ? 'bg-[#090D16] text-white' : 'bg-slate-50 text-slate-800'
       }`}>
 
       {/* 1. HEADER ROW */}

@@ -24,6 +24,7 @@ function Navbar({ onMenuClick }) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isConnectingTelegram, setIsConnectingTelegram] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   // Refs for click-outside detection
   const notifRef = useRef(null);
@@ -304,8 +305,38 @@ function Navbar({ onMenuClick }) {
     <nav className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors duration-300 ${isDark ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200/80 bg-white/80'}`}>
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
-          
-          {/* Menu & Logo */}
+          {isMobileSearchOpen ? (
+            <div className="flex h-16 w-full items-center gap-2">
+              <button
+                onClick={() => {
+                  setIsMobileSearchOpen(false);
+                  setSearchQuery('');
+                }}
+                className={`p-1.5 rounded-xl transition-all duration-200 outline-none ${
+                  isDark 
+                    ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' 
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+                aria-label="Exit search"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+              <SearchBar
+                searchRef={searchRef}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                isSearchFocused={isSearchFocused}
+                setIsSearchFocused={setIsSearchFocused}
+                isDark={isDark}
+                mobile={true}
+                onMobileSelect={() => setIsMobileSearchOpen(false)}
+              />
+            </div>
+          ) : (
+            <React.Fragment>
+              {/* Menu & Logo */}
           <div className="flex items-center gap-2.5">
             <button
               onClick={onMenuClick}
@@ -349,6 +380,18 @@ function Navbar({ onMenuClick }) {
 
           {/* Right Action Icons & Controls */}
           <div className="flex items-center gap-1.5 md:gap-3">
+            
+            {/* Mobile Search Toggle Button */}
+            <button
+              className={`p-2 rounded-xl sm:hidden transition-all duration-200 ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+              onClick={() => setIsMobileSearchOpen(true)}
+              aria-label="Open search"
+            >
+              <svg className="w-5.5 h-5.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
             
             {/* Theme Toggle Button */}
             <button
@@ -441,9 +484,11 @@ function Navbar({ onMenuClick }) {
               )}
             </div>
           </div>
-        </div>
-      </div>
-    </nav>
+        </React.Fragment>
+      )}
+    </div>
+  </div>
+</nav>
   );
 }
 export default Navbar

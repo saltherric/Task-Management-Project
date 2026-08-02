@@ -170,7 +170,7 @@ export default function SettingsPage() {
     }`}>
       
       {/* Scrollable Layout Container aligned to the left */}
-      <div className="max-w-[800px] px-6 py-5 space-y-8">
+      <div className="max-w-[800px] px-4 py-6 sm:px-6 space-y-8">
         
         {/* Page Title & Subtitle Header */}
         <div className="border-b pb-5 border-slate-200 dark:border-slate-800">
