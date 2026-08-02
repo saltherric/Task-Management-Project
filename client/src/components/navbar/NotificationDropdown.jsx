@@ -36,7 +36,7 @@ function NotificationDropdown({
                     isDark
                     ? 'text-indigo-400 hover:text-indigo-300'
                     : 'text-indigo-600 hover:text-indigo-700'
-                }`}
+                }`} 
                 onClick={markAllAsRead}
             >
                 Mark all as read

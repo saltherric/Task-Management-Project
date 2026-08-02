@@ -41,6 +41,7 @@ const getTaskById = async (req, res, next) => {
     try {
         const { generateSignedUrl } = require("../services/signedUrl");
         const task = await Task.findById(req.params.id)
+            .populate("project", "workspace")
             .populate("createdBy", "username email avatar")
             .populate("assignedTo", "username email avatar")
             .populate("completedBy", "username email avatar")
@@ -51,7 +52,7 @@ const getTaskById = async (req, res, next) => {
                 message: 'Task not found!'
             });
         }
-        await getProjectForUser({ projectId: task.project, userId: req.user._id });
+        await getProjectForUser({ projectId: task.project._id || task.project, userId: req.user._id });
 
         const taskObj = task.toObject();
         const signUserAvatar = async (user) => {

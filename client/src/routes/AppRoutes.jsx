@@ -12,6 +12,7 @@ import SettingsPage from "../features/SettingsPage";
 import OAuthSuccessPage from "../features/OAuthSuccessPage";
 import ForgotPasswordPage from "../features/ForgotPasswordPage";
 import ResetPasswordPage from "../features/ResetPasswordPage";
+import TaskRedirect from "../features/TaskRedirect";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 import MainLayout from "../components/layout/MainLayout";
@@ -30,7 +31,7 @@ function AppRoutes() {
         <Route path="/api/auth/verify-email" element={<VerifyEmailPage />} />
         <Route path="/resend-verification" element={<ResendVerificationPage />} />
         <Route path="/oauth-success" element={<OAuthSuccessPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/forgot-password" fill="none" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Invite Route (Public) */}
@@ -57,6 +58,11 @@ function AppRoutes() {
           <Route
             path="/workspaces/:workspaceId/projects/:projectId"
             element={<BoardView />}
+          />
+
+          <Route
+            path="/tasks/:taskId"
+            element={<TaskRedirect />}
           />
 
           <Route

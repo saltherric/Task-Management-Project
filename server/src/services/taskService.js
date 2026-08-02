@@ -155,18 +155,20 @@ const createTask = async ({ taskData, user, project, column }) => {
         console.error("Failed to log task_created activity:", activityError);
     }
 
+    const signedTask = await signTaskAvatars(task);
+
     emitToWorkspace(
         project.workspace.toString(),
         "task:created",
         {
-            task,
+            task: signedTask,
             projectId: project._id.toString(),
             workspaceId: project.workspace.toString(),
             actorId: user._id.toString(),
         }
     );
 
-    return await signTaskAvatars(task);
+    return signedTask;
 };
 
 const getTasks = async (projectId, user) => {
@@ -402,17 +404,19 @@ const updateTask = async ({ taskId, taskData, user }) => {
         .populate("updatedBy", "username email avatar")
         .populate("lastMovedBy", "username email avatar");
 
+    const signedTask = await signTaskAvatars(populateTask);
+
     emitToWorkspace(
         workspace._id.toString(),
         "task:updated",
         {
-            task: populateTask,
+            task: signedTask,
             projectId: project._id.toString(),
             workspaceId: workspace._id.toString(),
             actorId: user._id.toString(),
         }
     );
-    return await signTaskAvatars(populateTask);
+    return signedTask;
 };
 
 const deleteTask = async ({ taskId, user }) => {
@@ -494,18 +498,20 @@ const archiveTask = async (taskId, userId) => {
         .populate("lastMovedBy", "username email avatar")
         .populate("archivedBy", "username email avatar");
 
+    const signedTask = await signTaskAvatars(populatedTask);
+
     emitToWorkspace(
         project.workspace.toString(),
         "task:archived",
         {
-            task: populatedTask,
+            task: signedTask,
             projectId: project._id.toString(),
             workspaceId: project.workspace.toString(),
             actorId: userId.toString(),
         }
     );
 
-    return populatedTask;
+    return signedTask;
 };
 
 const unarchiveTask = async (taskId, userId) => {
@@ -548,18 +554,20 @@ const unarchiveTask = async (taskId, userId) => {
         .populate("lastMovedBy", "username email avatar")
         .populate("archivedBy", "username email avatar");
 
+    const signedTask = await signTaskAvatars(populatedTask);
+
     emitToWorkspace(
         project.workspace.toString(),
         "task:unarchived",
         {
-            task: populatedTask,
+            task: signedTask,
             projectId: project._id.toString(),
             workspaceId: project.workspace.toString(),
             actorId: userId.toString(),
         }
     );
 
-    return populatedTask;
+    return signedTask;
 };
 
 const getArchivedTasks = async (projectId, userId) => {
@@ -702,18 +710,20 @@ const moveTask = async ({ taskId, columnId, user }) => {
         .populate("updatedBy", "username email avatar")
         .populate("lastMovedBy", "username email avatar");
 
+    const signedTask = await signTaskAvatars(populatedTask);
+
     emitToWorkspace(
         workspace._id.toString(),
         "task:moved",
         {
-            task: populatedTask,
+            task: signedTask,
             projectId: project._id.toString(),
             workspaceId: workspace._id.toString(),
             actorId: user._id.toString(),
         }
     );
 
-    return await signTaskAvatars(populatedTask);
+    return signedTask;
 };
 
 module.exports = {
