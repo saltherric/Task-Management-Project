@@ -33,37 +33,37 @@ const getAvatarColor = (username) => {
 const getDayGroup = (dateValue) => {
   const d = new Date(dateValue);
   const now = new Date();
-  
-  const isSameDay = (d1, d2) => 
+
+  const isSameDay = (d1, d2) =>
     d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
     d1.getDate() === d2.getDate();
-    
+
   if (isSameDay(d, now)) {
     return 'TODAY';
   }
-  
+
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (isSameDay(d, yesterday)) {
     return 'YESTERDAY';
   }
-  
+
   return 'OLDER';
 };
 
 const formatRelativeTime = (dateValue) => {
   if (!dateValue) return 'Just now';
-  
+
   const date = new Date(dateValue);
   const diffInMinutes = Math.floor((Date.now() - date.getTime()) / 60000);
-  
+
   if (diffInMinutes < 1) return 'Just now';
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  
+
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours}h ago`;
-  
+
   const diffInDays = Math.floor(diffInHours / 24);
   return `${diffInDays}d ago`;
 };
@@ -71,25 +71,25 @@ const formatRelativeTime = (dateValue) => {
 const mapActivityToEvent = (activity) => {
   const user = activity.isSystemActor
     ? {
-        name: activity.systemActorName || 'System',
-        initials: getInitials(activity.systemActorName || 'System'),
-        avatarBg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-        avatar: null
-      }
+      name: activity.systemActorName || 'System',
+      initials: getInitials(activity.systemActorName || 'System'),
+      avatarBg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+      avatar: null
+    }
     : activity.actor
       ? {
-          name: activity.actor.username || 'Unknown User',
-          initials: getInitials(activity.actor.username || 'Unknown'),
-          avatarBg: getAvatarColor(activity.actor.username || ''),
-          avatar: activity.actor.avatar || null,
-          id: activity.actor._id
-        }
+        name: activity.actor.username || 'Unknown User',
+        initials: getInitials(activity.actor.username || 'Unknown'),
+        avatarBg: getAvatarColor(activity.actor.username || ''),
+        avatar: activity.actor.avatar || null,
+        id: activity.actor._id
+      }
       : {
-          name: 'Unknown User',
-          initials: '??',
-          avatarBg: 'bg-slate-100 text-slate-650',
-          avatar: null
-        };
+        name: 'Unknown User',
+        initials: '??',
+        avatarBg: 'bg-slate-100 text-slate-650',
+        avatar: null
+      };
 
   // Map type to action and badge
   let action = '';
@@ -299,7 +299,7 @@ export default function Activity() {
         // Prevent duplicate activities
         const exists = prev.some((e) => e.id === newActivity._id);
         if (exists) return prev;
-        
+
         const mapped = mapActivityToEvent(newActivity);
         return [mapped, ...prev];
       });
@@ -400,22 +400,21 @@ export default function Activity() {
   const renderEventItem = (event, index, poolLength) => {
     return (
       <div key={event.id} className="relative flex gap-4 md:gap-6 pb-8 last:pb-0 group">
-        
+
         {/* Vertical connecting line */}
         {index !== poolLength - 1 && (
-          <div className={`absolute left-[20px] top-[40px] bottom-0 w-[1.5px] ${
-            theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'
-          }`} />
+          <div className={`absolute left-[20px] top-[40px] bottom-0 w-[1.5px] ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'
+            }`} />
         )}
 
         {/* Avatar bubble with overlapping badge */}
         <div className="relative shrink-0 z-10">
           {event.user.avatar && !failedAvatars[event.user.id] ? (
-            <img 
-              src={event.user.avatar} 
-              alt="" 
+            <img
+              src={event.user.avatar}
+              alt=""
               onError={() => handleAvatarError(event.user.id)}
-              className="w-10 h-10 rounded-full object-cover" 
+              className="w-10 h-10 rounded-full object-cover"
             />
           ) : (
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${event.user.avatarBg}`}>
@@ -423,9 +422,8 @@ export default function Activity() {
             </div>
           )}
           {event.badge && event.type !== 'comment_added' && (
-            <div className={`absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-sm border-2 ${
-              theme === 'dark' ? 'border-[#12141a]' : 'border-white'
-            } ${event.badge.color}`}>
+            <div className={`absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-sm border-2 ${theme === 'dark' ? 'border-[#12141a]' : 'border-white'
+              } ${event.badge.color}`}>
               {event.badge.icon}
             </div>
           )}
@@ -452,11 +450,10 @@ export default function Activity() {
 
           {/* Comment Bubble text box */}
           {event.comment && (
-            <div className={`mt-2 px-5 py-3 rounded-2xl border text-xs leading-relaxed max-w-2xl transition-colors ${
-              theme === 'dark' 
-                ? 'bg-slate-950/30 border-slate-800/80 text-slate-350' 
+            <div className={`mt-2 px-5 py-3 rounded-2xl border text-xs leading-relaxed max-w-2xl transition-colors ${theme === 'dark'
+                ? 'bg-slate-950/30 border-slate-800/80 text-slate-350'
                 : 'bg-slate-50 border-slate-200/60 text-slate-650'
-            }`}>
+              }`}>
               {event.comment}
             </div>
           )}
@@ -509,10 +506,9 @@ export default function Activity() {
   };
 
   return (
-    <div className={`w-full h-full flex flex-col min-h-0 overflow-y-auto font-sans antialiased transition-colors duration-300 ${
-      theme === 'dark' ? 'bg-[#090D16] text-slate-100' : 'bg-slate-50 text-slate-900'
-    }`}>
-      
+    <div className={`w-full h-full flex flex-col min-h-0 overflow-y-auto font-sans antialiased transition-colors duration-300 ${theme === 'dark' ? 'bg-[#090D16] text-slate-100' : 'bg-slate-50 text-slate-900'
+      }`}>
+
       {/* GLOBAL TOAST POPUPS OVERLAYS */}
       <div className="fixed top-5 right-5 z-50 flex flex-col gap-2.5">
         {toasts.map(t => (
@@ -525,10 +521,10 @@ export default function Activity() {
 
       {/* MAIN TWO-COLUMN LAYOUT PANEL */}
       <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1300px] mx-auto p-4 md:p-8 gap-8 items-start">
-        
+
         {/* LEFT COLUMN: ACTIVE FEED TIMELINE */}
         <div className="flex-1 w-full space-y-6">
-          
+
           {/* TITLE & HEADER CONTROLS */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -539,21 +535,19 @@ export default function Activity() {
             </div>
 
             {/* Filter Toggle Buttons conforming strictly to image_eb38a6.png */}
-            <div className={`flex rounded-xl p-1 text-xs font-semibold shrink-0 ${
-              theme === 'dark' ? 'bg-slate-900' : 'bg-white shadow-sm border border-slate-200/90'
-            }`}>
+            <div className={`flex rounded-xl p-1 text-xs font-semibold shrink-0 ${theme === 'dark' ? 'bg-slate-900' : 'bg-white shadow-sm border border-slate-200/90'
+              }`}>
               <button
                 onClick={() => {
                   setActiveTab('all');
                   addToast('Showing all recent system actions.');
                 }}
-                className={`px-4.5 py-2 rounded-lg transition-all ${
-                  activeTab === 'all'
-                    ? theme === 'dark' 
-                      ? 'bg-slate-800 text-white shadow-sm' 
+                className={`px-4.5 py-2 rounded-lg transition-all ${activeTab === 'all'
+                    ? theme === 'dark'
+                      ? 'bg-slate-800 text-white shadow-sm'
                       : 'bg-slate-100 text-slate-900 border border-slate-200/50'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                }`}
+                  }`}
               >
                 All activity
               </button>
@@ -562,13 +556,12 @@ export default function Activity() {
                   setActiveTab('mentions');
                   addToast('Showing peer comment mention feeds.');
                 }}
-                className={`px-4.5 py-2 rounded-lg transition-all ${
-                  activeTab === 'mentions'
-                    ? theme === 'dark' 
-                      ? 'bg-slate-800 text-white shadow-sm' 
+                className={`px-4.5 py-2 rounded-lg transition-all ${activeTab === 'mentions'
+                    ? theme === 'dark'
+                      ? 'bg-slate-800 text-white shadow-sm'
                       : 'bg-slate-100 text-slate-900 border border-slate-200/50'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                }`}
+                  }`}
               >
                 Mentions
               </button> */}
@@ -580,11 +573,10 @@ export default function Activity() {
             <div ref={workspaceRef} className="relative inline-block z-20">
               <button
                 onClick={() => setIsWorkspaceDropdownOpen(!isWorkspaceDropdownOpen)}
-                className={`flex items-center gap-2 border rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
-                  theme === 'dark'
+                className={`flex items-center gap-2 border rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${theme === 'dark'
                     ? 'bg-[#1F1F23]/60 border-slate-800 text-slate-200 hover:bg-slate-800'
                     : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 shadow-sm'
-                }`}
+                  }`}
               >
                 <i className='fa-solid fa-folder text-indigo-500 dark:text-indigo-400 text-s'></i>
                 <span>{activeProject ? `${activeProject.name}` : 'All Projects'}</span>
@@ -594,20 +586,18 @@ export default function Activity() {
               </button>
 
               {isWorkspaceDropdownOpen && (
-                <div className={`absolute top-full left-0 mt-1.5 w-48 rounded-xl border shadow-2xl overflow-hidden z-40 transition-all duration-200 ${
-                  theme === 'dark' ? 'bg-[#121824] border-slate-800' : 'bg-white border-slate-200'
-                }`}>
+                <div className={`absolute top-full left-0 mt-1.5 w-48 rounded-xl border shadow-2xl overflow-hidden z-40 transition-all duration-200 ${theme === 'dark' ? 'bg-[#121824] border-slate-800' : 'bg-white border-slate-200'
+                  }`}>
                   <button
                     onClick={() => {
                       setIsWorkspaceDropdownOpen(false);
                       setActiveProject(null);
                       addToast('Showing activities for all projects.');
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors ${
-                      activeProject === null
+                    className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors ${activeProject === null
                         ? 'bg-[#6366F1] text-white'
                         : theme === 'dark' ? 'text-slate-300 hover:bg-slate-800/60' : 'text-slate-700 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     All Projects
                   </button>
@@ -619,11 +609,10 @@ export default function Activity() {
                         setActiveProject(proj);
                         addToast(`Filtering activities by ${proj.name}.`);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors ${
-                        activeProject?._id === proj._id
+                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors ${activeProject?._id === proj._id
                           ? 'bg-[#6366F1] text-white'
                           : theme === 'dark' ? 'text-slate-300 hover:bg-slate-800/60' : 'text-slate-700 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       {proj.name}
                     </button>
@@ -645,20 +634,18 @@ export default function Activity() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search feed activities..."
-                className={`w-full text-xs rounded-xl pl-9 pr-4 py-2.5 outline-none border transition-all ${
-                  theme === 'dark' 
-                    ? 'bg-slate-900 border-slate-800 text-slate-200 placeholder-slate-500 focus:border-indigo-500' 
+                className={`w-full text-xs rounded-xl pl-9 pr-4 py-2.5 outline-none border transition-all ${theme === 'dark'
+                    ? 'bg-slate-900 border-slate-800 text-slate-200 placeholder-slate-500 focus:border-indigo-500'
                     : 'bg-white border-slate-200/80 text-slate-800 placeholder-slate-400 focus:bg-white focus:border-indigo-500 shadow-sm'
-                }`}
+                  }`}
               />
             </div>
           </div>
 
           {/* SEARCH HIGHLIGHT NOTICE */}
           {searchQuery && (
-            <div className={`p-3.5 rounded-xl text-xs flex justify-between items-center ${
-              theme === 'dark' ? 'bg-slate-900/60 text-slate-300 border border-slate-800' : 'bg-slate-100 text-slate-600 border border-slate-200'
-            }`}>
+            <div className={`p-3.5 rounded-xl text-xs flex justify-between items-center ${theme === 'dark' ? 'bg-slate-900/60 text-slate-300 border border-slate-800' : 'bg-slate-100 text-slate-600 border border-slate-200'
+              }`}>
               <span>Filtering feed items matching: <strong>"{searchQuery}"</strong></span>
               <button onClick={() => setSearchQuery('')} className="text-[#6366F1] font-bold hover:underline">Clear search</button>
             </div>
@@ -678,17 +665,15 @@ export default function Activity() {
                   <h2 className="text-[10px] tracking-wider font-extrabold uppercase mb-4 text-slate-400 dark:text-slate-500">
                     TODAY
                   </h2>
-                  
+
                   {todayPool.length === 0 ? (
-                    <div className={`border rounded-2xl p-8 text-center text-xs text-slate-400 ${
-                      theme === 'dark' ? 'bg-[#1F1F23]/20 border-slate-800' : 'bg-white border-slate-200'
-                    }`}>
+                    <div className={`border rounded-2xl p-8 text-center text-xs text-slate-400 ${theme === 'dark' ? 'bg-[#1F1F23]/20 border-slate-800' : 'bg-white border-slate-200'
+                      }`}>
                       No activity logs registered today.
                     </div>
                   ) : (
-                    <div className={`border rounded-2xl p-6 md:p-8 shadow-sm ${
-                      theme === 'dark' ? 'bg-[#1F1F23]/40 border-slate-800' : 'bg-white border-slate-200/95'
-                    }`}>
+                    <div className={`border rounded-2xl p-6 md:p-8 shadow-sm ${theme === 'dark' ? 'bg-[#1F1F23]/40 border-slate-800' : 'bg-white border-slate-200/95'
+                      }`}>
                       <div className="relative">
                         {todayPool.map((event, index) => renderEventItem(event, index, todayPool.length))}
                       </div>
@@ -703,15 +688,13 @@ export default function Activity() {
                   </h2>
 
                   {yesterdayPool.length === 0 ? (
-                    <div className={`border rounded-2xl p-8 text-center text-xs text-slate-400 ${
-                      theme === 'dark' ? 'bg-[#1F1F23]/20 border-slate-800' : 'bg-white border-slate-200'
-                    }`}>
+                    <div className={`border rounded-2xl p-8 text-center text-xs text-slate-400 ${theme === 'dark' ? 'bg-[#1F1F23]/20 border-slate-800' : 'bg-white border-slate-200'
+                      }`}>
                       No activity logs registered yesterday.
                     </div>
                   ) : (
-                    <div className={`border rounded-2xl p-6 md:p-8 shadow-sm ${
-                      theme === 'dark' ? 'bg-[#1F1F23]/40 border-slate-800' : 'bg-white border-slate-200/95'
-                    }`}>
+                    <div className={`border rounded-2xl p-6 md:p-8 shadow-sm ${theme === 'dark' ? 'bg-[#1F1F23]/40 border-slate-800' : 'bg-white border-slate-200/95'
+                      }`}>
                       <div className="relative">
                         {yesterdayPool.map((event, index) => renderEventItem(event, index, yesterdayPool.length))}
                       </div>
@@ -726,9 +709,8 @@ export default function Activity() {
                       OLDER
                     </h2>
 
-                    <div className={`border rounded-2xl p-6 md:p-8 shadow-sm ${
-                      theme === 'dark' ? 'bg-[#1F1F23]/40 border-slate-800' : 'bg-white border-slate-200/95'
-                    }`}>
+                    <div className={`border rounded-2xl p-6 md:p-8 shadow-sm ${theme === 'dark' ? 'bg-[#1F1F23]/40 border-slate-800' : 'bg-white border-slate-200/95'
+                      }`}>
                       <div className="relative">
                         {olderPool.map((event, index) => renderEventItem(event, index, olderPool.length))}
                       </div>

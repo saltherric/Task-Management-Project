@@ -1,5 +1,5 @@
-const Comment = require( "../models/Comment");
-const Task = require ("../models/Task");
+const Comment = require("../models/Comment");
+const Task = require("../models/Task");
 const Project = require("../models/Project");
 const { logActivity } = require("./activityService");
 const { generateSignedUrl } = require("./signedUrl");
@@ -18,7 +18,7 @@ const signCommentAvatar = async (comment) => {
     return commentObj;
 };
 
-const createComment = async({ taskId, user, commentData}) => {
+const createComment = async ({ taskId, user, commentData }) => {
     const task = await Task.findById(taskId);
 
     if (!task) {
@@ -63,9 +63,9 @@ const createComment = async({ taskId, user, commentData}) => {
         const mentionsRegex = /@([a-zA-Z0-9_-]+)/g;
         const matches = comment.content.match(mentionsRegex) || [];
         const mentionedUsernames = [...new Set(matches.map(m => m.substring(1)))];
-        
+
         const mentionedUserIds = new Set();
-        
+
         const User = require("../models/User");
         const { notifyMention } = require("../utils/mentionNotifications");
         const { notifyCommentAdded } = require("../utils/commentNotifications");
@@ -74,11 +74,11 @@ const createComment = async({ taskId, user, commentData}) => {
             const mentionedUser = await User.findOne({
                 username: { $regex: new RegExp("^" + username + "$", "i") }
             }).select("_id");
-            
+
             if (mentionedUser) {
                 const mentionedUserIdStr = mentionedUser._id.toString();
                 mentionedUserIds.add(mentionedUserIdStr);
-                
+
                 // Do not notify commenter themselves
                 if (mentionedUserIdStr !== user._id.toString()) {
                     await notifyMention({
@@ -120,19 +120,19 @@ const createComment = async({ taskId, user, commentData}) => {
 }
 
 const getComments = async (taskId) => {
-   const task = await Task.findById(taskId);
+    const task = await Task.findById(taskId);
 
-   if (!task) {
-      throw new Error("Task not found");
-   }
+    if (!task) {
+        throw new Error("Task not found");
+    }
 
-   const comments = await Comment.find({
-      task: taskId,
-   })
-      .populate("user", "username email avatar")
-      .sort({ createdAt: 1 });
+    const comments = await Comment.find({
+        task: taskId,
+    })
+        .populate("user", "username email avatar")
+        .sort({ createdAt: 1 });
 
-   return await Promise.all(comments.map(signCommentAvatar));
+    return await Promise.all(comments.map(signCommentAvatar));
 }
 
 module.exports = {

@@ -383,7 +383,7 @@ export default function Dashboard() {
           const name = u.username || u.name || '';
           if (name && !assigneesMap.has(u._id?.toString())) {
             assigneesMap.set(u._id?.toString(), {
-              id: u._id,
+              id: u._id?.toString(),
               initials: getInitials(name),
               avatar: u.avatar || null
             });

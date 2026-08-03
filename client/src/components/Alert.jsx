@@ -18,28 +18,29 @@ function Alert({ alert, onClose }) {
 
   return (
     <div
-      className={`app-alert-toast flex items-start gap-3 p-4 rounded-2xl border backdrop-blur-[8px] transition-all duration-300 shadow-[0_8px_32px_rgba(30,41,59,0.15)] ${
+      className={`app-alert-toast flex items-start gap-3 p-4 rounded-2xl border backdrop-blur-[12px] transition-all duration-300 ${
         isSuccess
-          ? 'bg-emerald-500/10 border-emerald-500/20'
-          : 'bg-rose-500/10 border-rose-500/20'
+          ? 'bg-emerald-50/95 border-emerald-500/30 text-emerald-800 dark:bg-emerald-950/80 dark:border-emerald-500/40 dark:text-emerald-200'
+          : 'bg-rose-50/95 border-rose-500/30 text-rose-800 dark:bg-rose-950/80 dark:border-rose-500/40 dark:text-rose-200'
       }`}
       style={{ textAlign: 'left' }}
     >
       <div className="flex-shrink-0 mt-0.5">
         {isSuccess ? (
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
         ) : (
-          <AlertTriangle className="w-5 h-5 text-rose-400" />
+          <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
         )}
       </div>
       
-      <div className="flex-1 text-sm font-medium text-(--color-text)">
+      <div className="flex-1 text-sm font-semibold leading-relaxed">
         {alert.message}
       </div>
 
       <button
         onClick={onClose}
-        className="flex-shrink-0 text-(--color-muted) hover:text-(--color-text) transition-colors cursor-pointer"
+        className="flex-shrink-0 mt-0.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+        aria-label="Close alert"
       >
         <X className="w-4 h-4" />
       </button>

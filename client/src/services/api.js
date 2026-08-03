@@ -11,5 +11,23 @@ API.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-})
-export default API
+});
+
+API.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            const publicPaths = ["/login", "/register", "/verify-email", "/resend-verification", "/forgot-password", "/reset-password", "/oauth-success", "/invite"];
+            const isPublicPage = publicPaths.some(path => window.location.pathname.startsWith(path) || window.location.pathname === "/");
+
+            if (!isPublicPage) {
+                localStorage.removeItem("userInfo");
+                window.dispatchEvent(new Event("userInfoUpdated"));
+                window.location.href = "/login?expired=true";
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
+export default API;

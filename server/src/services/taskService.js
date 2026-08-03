@@ -572,7 +572,7 @@ const unarchiveTask = async (taskId, userId) => {
 
 const getArchivedTasks = async (projectId, userId) => {
     await getProjectForUser({ projectId, userId });
-    return await Task.find({
+    const tasks = await Task.find({
         project: projectId,
         isArchived: true,
     })
@@ -585,6 +585,8 @@ const getArchivedTasks = async (projectId, userId) => {
         .populate("lastMovedBy", "username email avatar")
         .populate("archivedBy", "username email avatar")
         .sort({ archivedAt: -1 });
+
+    return Promise.all(tasks.map(signTaskAvatars));
 }
 
 const moveTask = async ({ taskId, columnId, user }) => {

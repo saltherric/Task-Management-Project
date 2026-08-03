@@ -25,6 +25,14 @@ function Login() {
     }
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('expired') === 'true') {
+      showAlert('Your session has expired. Please log in again.', 'warning');
+      navigate('/login', { replace: true });
+    }
+  }, [location.search, navigate, showAlert]);
+
   const validate = () => {
     const tempErrors = {};
     if (!email.trim()) {

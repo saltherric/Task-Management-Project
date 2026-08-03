@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import Alert from '../components/Alert';
 
 const AlertContext = createContext();
@@ -32,13 +32,13 @@ export function AlertProvider({ children }) {
     return () => clearTimeout(timerId);
   }, [alert]);
 
-  const showAlert = (message, type = 'info') => {
+  const showAlert = useCallback((message, type = 'info') => {
     setAlert({ message, type });
-  };
+  }, []);
 
-  const hideAlert = () => {
+  const hideAlert = useCallback(() => {
     setAlert(null);
-  };
+  }, []);
 
   return (
     <AlertContext.Provider value={{ alert, showAlert, hideAlert }}>
